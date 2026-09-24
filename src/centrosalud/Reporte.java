@@ -19,9 +19,10 @@ public class Reporte {
         System.out.println("Fecha: " + fecha);
         System.out.println("Cantidad de atenciones: " + atenciones.size());
 
-        for (AtencionMedica atencion : atenciones) {
-            System.out.println("\nAtención: " + atencion.getIdAtencion());
-            System.out.println("Diagnóstico: " + atencion.getDiagnostico());
-        }
+        // Paradigma funcional: filter + map + forEach (funciones de orden superior)
+        atenciones.stream()
+                .filter(a -> !a.getDiagnostico().isBlank())
+                .map(a -> "Atención " + a.getIdAtencion() + " - " + a.getDiagnostico())
+                .forEach(System.out::println);
     }
 }

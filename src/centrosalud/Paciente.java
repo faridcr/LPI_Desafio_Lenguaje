@@ -13,7 +13,7 @@ public class Paciente extends Persona {
     }
 
     public void solicitarCita() {
-        System.out.println(nombre + " solicita una cita médica.");
+        System.out.println(getNombre() + " solicita una cita médica.");
     }
 
     public void consultarHistoria() {

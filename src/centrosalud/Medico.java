@@ -10,11 +10,16 @@ public class Medico extends Persona {
         this.especialidad = especialidad;
     }
 
-    public String getCmp() { return cmp; }
-    public String getEspecialidad() { return especialidad; }
+    public String getCmp() {
+        return cmp;
+    }
+
+    public String getEspecialidad() {
+        return especialidad;
+    }
 
     public void atenderCita(CitaMedica cita) {
-        System.out.println("El médico " + nombre +
-                " está atendiendo la cita " + cita.getIdCita());
+        System.out.println("El médico " + getNombre()
+                + " está atendiendo la cita " + cita.getIdCita());
     }
 }
