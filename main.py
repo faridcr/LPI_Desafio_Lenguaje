@@ -13,7 +13,7 @@ def main() -> None:
     cita = CitaMedica("C001", "30/09/2026", EstadoCita.PROGRAMADA, "Consulta general")
     atencion = AtencionMedica("A001", "Gripe", "Reposo y medicación", "Control en 7 días")
 
-    print("=== CENTRO DE SALUD SANTA ROSA ===")
+    print("=== CENTRO DE SALUD 10 DE OCTUBRE ===")
     paciente.mostrar_datos()
     print()
 

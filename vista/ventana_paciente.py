@@ -11,13 +11,13 @@ class VentanaPaciente(tk.Tk):
         super().__init__()
         self._registro = RegistroAtenciones()
 
-        self.title("Centro de Salud Santa Rosa")
+        self.title("Centro de Salud 10 de Octubre")
         self._centrar(650, 550)
 
         principal = tk.Frame(self, padx=20, pady=20)
         principal.pack(fill="both", expand=True)
 
-        tk.Label(principal, text="CENTRO DE SALUD SANTA ROSA",
+        tk.Label(principal, text="CENTRO DE SALUD 10 DE OCTUBRE",
                  font=("Arial", 18, "bold")).pack(pady=(0, 15))
 
         # Datos de la atención
