@@ -15,7 +15,7 @@ public class VentanaPaciente extends JFrame {
     public VentanaPaciente() {
 
         // Título de la ventana
-        setTitle("Centro de Salud Santa Rosa");
+        setTitle("Centro de Salud 10 de Octubre");
 
         // Tamaño de la ventana
         setSize(650, 550);
@@ -37,7 +37,7 @@ public class VentanaPaciente extends JFrame {
         // =========================
 
         JLabel titulo = new JLabel(
-                "CENTRO DE SALUD SANTA ROSA",
+        		"CENTRO DE SALUD 10 DE OCTUBRE",
                 SwingConstants.CENTER
         );
 

@@ -20,7 +20,7 @@ public class Principal {
                 "A001", "Gripe", "Reposo y medicación",
                 "Control en 7 días");
 
-        System.out.println("=== CENTRO DE SALUD SANTA ROSA ===");
+        System.out.println("=== CENTRO DE SALUD 10 DE OCTUBRE ===");
         paciente.mostrarDatos();
         System.out.println();
 
