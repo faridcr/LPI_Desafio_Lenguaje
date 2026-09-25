@@ -1,52 +1,101 @@
 package centrosalud;
 
-import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Principal {
     public static void main(String[] args) {
-
-        Paciente paciente = new Paciente(
-                "12345678", "Juan Perez", 25, "HC-001");
-
-        Medico medico = new Medico(
-                "87654321", "Dr. Carlos Torres", 40,
-                "CMP-45678", "Medicina General");
-
-        CitaMedica cita = new CitaMedica(
-                "C001", "20/09/2026", "PROGRAMADA",
-                "Consulta general");
-
-        AtencionMedica atencion = new AtencionMedica(
-                "A001", "Gripe", "Reposo y medicación",
-                "Control en 7 días");
+        Scanner sc = new Scanner(System.in);
+        CentroSalud centro = new CentroSalud();
+        int opcion;
 
         System.out.println("=== CENTRO DE SALUD 10 DE OCTUBRE ===");
-        paciente.mostrarDatos();
-        System.out.println();
 
-        medico.mostrarDatos();
-        System.out.println("Especialidad: " + medico.getEspecialidad());
+        do {
+            System.out.println("\n--- MENÚ ---");
+            System.out.println("1. Registrar paciente");
+            System.out.println("2. Registrar médico");
+            System.out.println("3. Buscar persona por DNI");
+            System.out.println("4. Listar todos los registrados");
+            System.out.println("5. Salir");
+            System.out.print("Elige una opción: ");
 
-        System.out.println();
-        paciente.solicitarCita();
-        medico.atenderCita(cita);
+            opcion = Integer.parseInt(sc.nextLine().trim());
 
-        System.out.println("\n=== ATENCIÓN MÉDICA ===");
-        atencion.mostrarAtencion();
+            switch (opcion) {
+                case 1:
+                    registrarPaciente(sc, centro);
+                    break;
+                case 2:
+                    registrarMedico(sc, centro);
+                    break;
+                case 3:
+                    buscarPorDni(sc, centro);
+                    break;
+                case 4:
+                    centro.listarTodos();
+                    break;
+                case 5:
+                    System.out.println("Saliendo del sistema...");
+                    break;
+                default:
+                    System.out.println("Opción no válida.");
+            }
+        } while (opcion != 5);
 
-        Receta receta = new Receta();
-        receta.agregarMedicamento("Paracetamol");
-        receta.agregarMedicamento("Ibuprofeno");
+        sc.close();
+    }
 
-        System.out.println();
-        receta.mostrarMedicamentos();
+    private static void registrarPaciente(Scanner sc, CentroSalud centro) {
+        try {
+            System.out.print("DNI (8 dígitos): ");
+            String dni = sc.nextLine().trim();
+            System.out.print("Nombre: ");
+            String nombre = sc.nextLine().trim();
+            System.out.print("Fecha de nacimiento (dd/MM/yyyy): ");
+            String fechaNacimiento = sc.nextLine().trim();
+            System.out.print("Historia clínica: ");
+            String historia = sc.nextLine().trim();
 
-        ArrayList<AtencionMedica> listaAtenciones = new ArrayList<>();
-        listaAtenciones.add(atencion);
+            Paciente paciente = new Paciente(dni, nombre, fechaNacimiento, historia);
+            centro.registrarPaciente(paciente);
+            System.out.println("Paciente registrado con éxito.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
 
-        Reporte reporte = new Reporte(
-                "Reporte de atenciones", "20/09/2026");
+    private static void registrarMedico(Scanner sc, CentroSalud centro) {
+        try {
+            System.out.print("DNI (8 dígitos): ");
+            String dni = sc.nextLine().trim();
+            System.out.print("Nombre: ");
+            String nombre = sc.nextLine().trim();
+            System.out.print("Fecha de nacimiento (dd/MM/yyyy): ");
+            String fechaNacimiento = sc.nextLine().trim();
+            System.out.print("CMP: ");
+            String cmp = sc.nextLine().trim();
+            System.out.print("Especialidad: ");
+            String especialidad = sc.nextLine().trim();
 
-        reporte.generarReporte(listaAtenciones);
+            Medico medico = new Medico(dni, nombre, fechaNacimiento, cmp, especialidad);
+            centro.registrarMedico(medico);
+            System.out.println("Médico registrado con éxito.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private static void buscarPorDni(Scanner sc, CentroSalud centro) {
+        System.out.print("Ingresa el DNI a buscar: ");
+        String dni = sc.nextLine().trim();
+
+        Persona encontrada = centro.buscarPorDni(dni);
+
+        if (encontrada == null) {
+            System.out.println("No se encontró ninguna persona con ese DNI.");
+        } else {
+            System.out.println("\n--- PERSONA ENCONTRADA ---");
+            encontrada.mostrarDatos();
+        }
     }
 }

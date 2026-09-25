@@ -3,8 +3,9 @@ package centrosalud;
 public class Paciente extends Persona {
     private String historiaClinica;
 
-    public Paciente(String dni, String nombre, int edad, String historiaClinica) {
-        super(dni, nombre, edad);
+    public Paciente(String dni, String nombre, String fechaNacimiento,
+                     String historiaClinica) {
+        super(dni, nombre, fechaNacimiento);
         this.historiaClinica = historiaClinica;
     }
 
@@ -17,6 +18,12 @@ public class Paciente extends Persona {
     }
 
     public void consultarHistoria() {
+        System.out.println("Historia clínica: " + historiaClinica);
+    }
+
+    @Override
+    public void mostrarDatos() {
+        super.mostrarDatos();
         System.out.println("Historia clínica: " + historiaClinica);
     }
 }

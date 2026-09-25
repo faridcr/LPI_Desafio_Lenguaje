@@ -4,8 +4,9 @@ public class Medico extends Persona {
     private String cmp;
     private String especialidad;
 
-    public Medico(String dni, String nombre, int edad, String cmp, String especialidad) {
-        super(dni, nombre, edad);
+    public Medico(String dni, String nombre, String fechaNacimiento,
+                   String cmp, String especialidad) {
+        super(dni, nombre, fechaNacimiento);
         this.cmp = cmp;
         this.especialidad = especialidad;
     }
@@ -21,5 +22,12 @@ public class Medico extends Persona {
     public void atenderCita(CitaMedica cita) {
         System.out.println("El médico " + getNombre()
                 + " está atendiendo la cita " + cita.getIdCita());
+    }
+
+    @Override
+    public void mostrarDatos() {
+        super.mostrarDatos();
+        System.out.println("CMP: " + cmp);
+        System.out.println("Especialidad: " + especialidad);
     }
 }
