@@ -145,12 +145,15 @@ public class VentanaPaciente extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        JPanel formulario = new JPanel(new GridLayout(4, 2, 8, 8));
+        JPanel formulario = new JPanel(new GridLayout(5, 2, 8, 8));
+        JTextField txtDniPaciente = new JTextField();
         JTextField txtId = new JTextField();
         JTextField txtDiagnostico = new JTextField();
         JTextField txtTratamiento = new JTextField();
         JTextField txtObservaciones = new JTextField();
 
+        formulario.add(new JLabel("DNI del paciente:"));
+        formulario.add(txtDniPaciente);
         formulario.add(new JLabel("ID Atención:"));
         formulario.add(txtId);
         formulario.add(new JLabel("Diagnóstico:"));
@@ -170,16 +173,31 @@ public class VentanaPaciente extends JFrame {
         txtResultado.setEditable(false);
 
         btnRegistrar.addActionListener(e -> {
+            String dni = txtDniPaciente.getText().trim();
+            Persona encontrada = centro.buscarPorDni(dni);
+
+            if (!(encontrada instanceof Paciente)) {
+                txtResultado.setText("No existe un paciente registrado con ese DNI.\n"
+                        + "Regístralo primero en la pestaña \"Pacientes\".");
+                return;
+            }
+
+            Paciente paciente = (Paciente) encontrada;
+
             AtencionMedica atencion = new AtencionMedica(
                     txtId.getText().trim(),
                     txtDiagnostico.getText().trim(),
                     txtTratamiento.getText().trim(),
                     txtObservaciones.getText().trim());
 
-            atenciones.add(atencion); // se guarda en la lista mientras corre el programa
+            // Conexión real: queda dentro de la historia clínica de ESE paciente.
+            paciente.agregarAtencion(atencion);
+            atenciones.add(atencion); // también se guarda aquí para el reporte global
 
             String salida = capturarSalida(() -> atencion.mostrarAtencion());
-            txtResultado.setText("ATENCIÓN REGISTRADA (total: " + atenciones.size() + "):\n\n" + salida);
+            txtResultado.setText("ATENCIÓN REGISTRADA para " + paciente.getNombre()
+                    + " (total en su historia: "
+                    + paciente.getHistoriaClinica().getAtenciones().size() + "):\n\n" + salida);
 
             txtId.setText("");
             txtDiagnostico.setText("");
