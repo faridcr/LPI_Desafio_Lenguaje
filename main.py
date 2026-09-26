@@ -1,57 +1,143 @@
-from modelo.paciente import Paciente
-from modelo.medico import Medico
-from modelo.cita_medica import CitaMedica, EstadoCita
-from modelo.atencion_medica import AtencionMedica
-from modelo.receta import Receta
-from modelo.reporte import Reporte
+from servicio.centro_salud import CentroSalud
 
 
-def main() -> None:
-    # Todos los datos son ficticios (Ley N.° 29733)
-    paciente = Paciente("12345678", "Juan Perez", 25, "HC-001")
-    medico = Medico("87654321", "Dr. Carlos Torres", 40, "CMP-45678", "Medicina General")
-    cita = CitaMedica("C001", "30/09/2026", EstadoCita.PROGRAMADA, "Consulta general")
-    atencion = AtencionMedica("A001", "Gripe", "Reposo y medicación", "Control en 7 días")
+def mostrar_menu():
+    print("\n========================================")
+    print("   CENTRO DE SALUD 10 DE OCTUBRE")
+    print("========================================")
+    print("1. Registrar paciente")
+    print("2. Registrar médico")
+    print("3. Registrar atención")
+    print("4. Buscar por DNI")
+    print("5. Listar pacientes y médicos")
+    print("6. Salir")
 
-    print("=== CENTRO DE SALUD 10 DE OCTUBRE ===")
-    paciente.mostrar_datos()
-    print()
 
-    medico.mostrar_datos()
-    print(f"Especialidad: {medico.especialidad}")
+def registrar_paciente(centro):
+    print("\n=== REGISTRAR PACIENTE ===")
 
-    print()
-    paciente.solicitar_cita()
-    medico.atender_cita(cita)
+    dni = input("DNI: ")
+    nombre = input("Nombre completo: ")
 
-    print("\n=== ATENCIÓN MÉDICA ===")
-    atencion.mostrar_atencion()
-
-    receta = Receta()
-    receta.agregar_medicamento("Paracetamol")
-    receta.agregar_medicamento("Ibuprofeno")
-    print()
-    receta.mostrar_medicamentos()
-
-    atenciones = [
-        atencion,
-        AtencionMedica("A002", "Gripe estacional", "Hidratación", "Volver si hay fiebre"),
-        AtencionMedica("A003", "Gastritis", "Dieta blanda", "Control en 15 días"),
-    ]
-
-    reporte = Reporte("Reporte de atenciones", "30/09/2026")
-    reporte.generar_reporte(atenciones)
-
-    # Programación funcional: filter y map
-    gripes = Reporte.filtrar_por_diagnostico(atenciones, "gripe")
-    print("\nAtenciones por gripe:", [a.id_atencion for a in gripes])
-    print("Diagnósticos:", Reporte.listar_diagnosticos(atenciones))
-
-    # Manejo de errores: datos inválidos
     try:
-        Paciente("123", "Error Prueba", 20, "HC-999")
-    except ValueError as e:
-        print("Error controlado:", e)
+        edad = int(input("Edad: "))
+        historia = input("N° Historia clínica: ")
+
+        paciente = centro.registrar_paciente(
+            dni, nombre, edad, historia
+        )
+
+        print("\nPaciente registrado correctamente.")
+        print(paciente.mostrar_datos())
+
+    except ValueError as error:
+        print("\nError:", error)
+
+
+def registrar_medico(centro):
+    print("\n=== REGISTRAR MÉDICO ===")
+
+    dni = input("DNI: ")
+    nombre = input("Nombre completo: ")
+
+    try:
+        edad = int(input("Edad: "))
+        cmp = input("CMP: ")
+        especialidad = input("Especialidad: ")
+
+        medico = centro.registrar_medico(
+            dni, nombre, edad, cmp, especialidad
+        )
+
+        print("\nMédico registrado correctamente.")
+        print(medico.mostrar_datos())
+
+    except ValueError as error:
+        print("\nError:", error)
+
+
+def registrar_atencion(centro):
+    print("\n=== REGISTRAR ATENCIÓN ===")
+
+    dni = input("DNI del paciente: ")
+    id_atencion = input("ID Atención: ")
+    diagnostico = input("Diagnóstico: ")
+    tratamiento = input("Tratamiento: ")
+    observaciones = input("Observaciones: ")
+
+    try:
+        atencion = centro.registrar_atencion(
+            dni,
+            id_atencion,
+            diagnostico,
+            tratamiento,
+            observaciones
+        )
+
+        paciente = centro.buscar_por_dni(dni)
+
+        print("\nAtención registrada correctamente.")
+        print("Paciente:", paciente.nombre)
+        print("Historia clínica:", paciente.historia_clinica)
+        print("ID Atención:", atencion.id_atencion)
+        print("Diagnóstico:", atencion.diagnostico)
+        print("Tratamiento:", atencion.tratamiento)
+
+    except ValueError as error:
+        print("\nError:", error)
+
+
+def buscar_persona(centro):
+    print("\n=== BUSCAR POR DNI ===")
+    dni = input("Ingrese DNI: ")
+
+    persona = centro.buscar_por_dni(dni)
+
+    if persona is None:
+        print("\nNo se encontró ninguna persona con ese DNI.")
+    else:
+        print("\n=== PERSONA ENCONTRADA ===")
+        print(persona.mostrar_datos())
+
+        if persona.rol == "Paciente" and persona.atenciones:
+            print("\n=== ATENCIONES ===")
+
+            for atencion in persona.atenciones:
+                print("\nID:", atencion.id_atencion)
+                print("Diagnóstico:", atencion.diagnostico)
+                print("Tratamiento:", atencion.tratamiento)
+                print("Observaciones:", atencion.observaciones)
+                print("Observado por:", atencion.medico.nombre)
+
+def main():
+    centro = CentroSalud()
+
+    while True:
+        mostrar_menu()
+        opcion = input("\nSeleccione una opción: ")
+
+        if opcion == "1":
+            registrar_paciente(centro)
+
+        elif opcion == "2":
+            registrar_medico(centro)
+
+        elif opcion == "3":
+            registrar_atencion(centro)
+
+        elif opcion == "4":
+            buscar_persona(centro)
+
+        elif opcion == "5":
+            print()
+            print(centro.listar_todos())
+
+        elif opcion == "6":
+            print("\nPrograma finalizado.")
+            break
+
+        else:
+            print("\nOpción no válida. Intente nuevamente.")
 
 
 if __name__ == "__main__":
