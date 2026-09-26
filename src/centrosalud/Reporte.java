@@ -2,6 +2,7 @@ package centrosalud;
 
 import java.util.List;
 
+// Genera un reporte de texto a partir de una lista de atenciones
 public class Reporte {
     private String tipoReporte;
     private String fecha;
@@ -19,7 +20,7 @@ public class Reporte {
         System.out.println("Fecha: " + fecha);
         System.out.println("Cantidad de atenciones: " + atenciones.size());
 
-        // Paradigma funcional: filter + map + forEach (funciones de orden superior)
+        // Streams: filter (descarta sin diagnóstico) + map (arma el texto) + forEach (imprime)
         atenciones.stream()
                 .filter(a -> !a.getDiagnostico().isBlank())
                 .map(a -> "Atención " + a.getIdAtencion() + " - " + a.getDiagnostico())

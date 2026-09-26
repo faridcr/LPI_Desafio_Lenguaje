@@ -3,9 +3,7 @@ package centrosalud;
 import java.util.ArrayList;
 import java.util.List;
 
-// Antes "historia clínica" era solo un String dentro de Paciente.
-// Ahora es su propia clase: tiene un número identificador y guarda
-// las atenciones médicas reales que ha recibido el paciente.
+// Composición: guarda las atenciones médicas reales del paciente
 public class HistoriaClinica {
     private String numeroHistoria;
     private List<AtencionMedica> atenciones;
@@ -23,8 +21,6 @@ public class HistoriaClinica {
         return numeroHistoria;
     }
 
-    // Conecta HistoriaClinica con AtencionMedica: cada atención que recibe
-    // el paciente queda registrada aquí, no suelta en otro lado.
     public void agregarAtencion(AtencionMedica atencion) {
         if (atencion == null) {
             throw new IllegalArgumentException(

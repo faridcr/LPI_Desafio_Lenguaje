@@ -3,8 +3,7 @@ package centrosalud;
 import java.util.ArrayList;
 import java.util.List;
 
-// Clase "registro": guarda en memoria todo lo que se va creando
-// durante la ejecución del programa.
+// Clase controladora: junta pacientes, médicos, citas y medicamentos
 public class CentroSalud {
     private List<Paciente> pacientes;
     private List<Medico> medicos;
@@ -28,12 +27,10 @@ public class CentroSalud {
                 return m;
             }
         }
-        return null; // no encontrado
+        return null;
     }
 
-    // Devuelve una COPIA de la lista, no la lista real: así quien reciba
-    // esto puede leerla (para llenar un JComboBox, por ejemplo) pero no
-    // puede hacer .add() o .remove() sobre la lista interna de CentroSalud.
+    // Devuelve una copia: protege la lista real de medicamentos
     public List<Medicamento> getMedicamentos() {
         return new ArrayList<>(medicamentos);
     }
@@ -46,8 +43,7 @@ public class CentroSalud {
         medicos.add(medico);
     }
 
-    // Devuelve el tipo general Persona: no sabemos (ni nos importa)
-    // si es Medico o Paciente hasta que se llame a mostrarDatos().
+    // Devuelve Persona -> polimorfismo (puede ser Medico o Paciente)
     public Persona buscarPorDni(String dni) {
         for (Paciente p : pacientes) {
             if (p.coincideDni(dni)) {
@@ -59,12 +55,10 @@ public class CentroSalud {
                 return m;
             }
         }
-        return null; // no encontrado
+        return null;
     }
 
-    // Este método es la conexión real que pidió tu profe:
-    // busca al paciente y al médico por DNI entre los YA registrados.
-    // Si cualquiera de los dos no existe, la cita no se crea.
+    // Conexión real: valida que paciente y médico ya existan antes de crear la cita
     public CitaMedica registrarCita(String idCita, String fecha, String motivo,
                                      String dniPaciente, String dniMedico) {
 
@@ -80,7 +74,6 @@ public class CentroSalud {
                     "No existe un médico registrado con el DNI " + dniMedico + ".");
         }
 
-        // instanceof ya confirmó el tipo real, así que el cast es seguro.
         Paciente paciente = (Paciente) posiblePaciente;
         Medico medico = (Medico) posibleMedico;
 

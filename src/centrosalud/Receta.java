@@ -3,20 +3,18 @@ package centrosalud;
 import java.util.ArrayList;
 import java.util.List;
 
+// Composición: contiene los medicamentos reales del inventario
 public class Receta {
     private List<Medicamento> medicamentos;
-    private List<String> frecuencias; // misma posición (índice) que medicamentos
+    private List<String> frecuencias; // misma posición que medicamentos
 
     public Receta() {
         medicamentos = new ArrayList<>();
         frecuencias = new ArrayList<>();
     }
 
-    // Recibe el objeto Medicamento real (ya encontrado antes en CentroSalud)
-    // y la frecuencia escrita a mano por el usuario. Cada vez que se agrega,
-    // descuenta una unidad de su stock.
     public void agregarMedicamento(Medicamento medicamento, String frecuencia) {
-        medicamento.descontarStock();
+        medicamento.descontarStock(); // baja el stock real del inventario
         medicamentos.add(medicamento);
 
         if (frecuencia == null || frecuencia.isBlank()) {

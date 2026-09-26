@@ -1,5 +1,6 @@
 package centrosalud;
 
+// Asociación entre Paciente y Medico (ambos ya deben existir)
 public class CitaMedica {
     private String idCita;
     private String fecha;
@@ -35,6 +36,7 @@ public class CitaMedica {
     public Paciente getPaciente() { return paciente; }
     public Medico getMedico() { return medico; }
 
+    // Estado controlado: solo cambia con estas acciones
     public void programarCita() {
         estado = "PROGRAMADA";
     }

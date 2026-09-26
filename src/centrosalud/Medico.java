@@ -1,12 +1,13 @@
 package centrosalud;
 
+// Herencia: Medico extiende Persona
 public class Medico extends Persona {
     private String cmp;
     private String especialidad;
 
     public Medico(String dni, String nombres, String apellidos, String fechaNacimiento,
                    String cmp, String especialidad) {
-        super(dni, nombres, apellidos, fechaNacimiento);
+        super(dni, nombres, apellidos, fechaNacimiento); // llama al constructor de Persona
         this.cmp = cmp;
         this.especialidad = especialidad;
     }
@@ -24,6 +25,7 @@ public class Medico extends Persona {
                 + " está atendiendo la cita " + cita.getIdCita());
     }
 
+    // Polimorfismo: sobrescribe mostrarDatos() de Persona
     @Override
     public void mostrarDatos() {
         super.mostrarDatos();

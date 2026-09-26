@@ -5,7 +5,9 @@ import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
+// Clase abstracta: base de la herencia (Medico y Paciente heredan de aquí)
 public abstract class Persona {
+    // Atributos privados -> encapsulamiento
     private String dni;
     private String nombres;
     private String apellidos;
@@ -14,8 +16,8 @@ public abstract class Persona {
     private static final DateTimeFormatter FORMATO_FECHA =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    // Ahora nombres y apellidos van separados, como en el DNI real.
     public Persona(String dni, String nombres, String apellidos, String fechaNacimiento) {
+        // Validaciones en el constructor
         if (dni == null || !dni.matches("\\d{8}")) {
             throw new IllegalArgumentException("El DNI debe tener 8 dígitos.");
         }
@@ -52,19 +54,18 @@ public abstract class Persona {
     public String getNombres() { return nombres; }
     public String getApellidos() { return apellidos; }
 
-    // Método de conveniencia: junta ambos para mostrarlos en mensajes,
-    // sin obligar a todo el resto del código a concatenarlos cada vez.
     public String getNombreCompleto() {
         return apellidos + " " + nombres;
     }
 
     public LocalDate getFechaNacimiento() { return fechaNacimiento; }
 
+    // Edad calculada al vuelo, no se guarda como atributo
     public int getEdad() {
         return Period.between(fechaNacimiento, LocalDate.now()).getYears();
     }
 
-    // Ley N.° 29733: el DNI completo no se muestra
+    // Ley 29733: no se muestra el DNI completo
     public String getDniEnmascarado() {
         return "****" + dni.substring(4);
     }
@@ -73,6 +74,7 @@ public abstract class Persona {
         return dni.equals(dniConsulta);
     }
 
+    // Sobrescrito en Medico y Paciente -> polimorfismo
     public void mostrarDatos() {
         System.out.println("DNI: " + getDniEnmascarado());
         System.out.println("Apellidos: " + apellidos);

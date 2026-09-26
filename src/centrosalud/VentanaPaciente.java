@@ -2,17 +2,19 @@ package centrosalud;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.print.PrinterException;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.PrintStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+// Punto de entrada - versión gráfica (Swing). Usa la misma lógica que Principal.
+// El botón "IMPRIMIR RECETA" genera un PDF simple con métodos propios
+// (sin librerías externas) y lo abre directo, en vez del diálogo nativo de impresión.
 public class VentanaPaciente extends JFrame {
 
-    // ===== Estado compartido: vive mientras la ventana esté abierta =====
     private CentroSalud centro = new CentroSalud();
     private List<AtencionMedica> atenciones = new ArrayList<>();
 
@@ -34,9 +36,7 @@ public class VentanaPaciente extends JFrame {
         add(pestañas);
     }
 
-    // =========================================================
-    // PESTAÑA 1: REGISTRAR PACIENTE (usa Paciente + CentroSalud)
-    // =========================================================
+    // Pestaña 1: registrar paciente
     private JPanel crearPanelPacientes() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -74,8 +74,6 @@ public class VentanaPaciente extends JFrame {
 
                 centro.registrarPaciente(paciente);
 
-                // Reutilizamos mostrarDatos() (polimórfico) para mostrar
-                // la confirmación con los datos ya validados y calculados.
                 String salida = capturarSalida(() -> paciente.mostrarDatos());
                 txtResultado.setText("PACIENTE REGISTRADO:\n\n" + salida);
 
@@ -90,9 +88,7 @@ public class VentanaPaciente extends JFrame {
         return panel;
     }
 
-    // =========================================================
-    // PESTAÑA 2: REGISTRAR MÉDICO (usa Medico + CentroSalud)
-    // =========================================================
+    // Pestaña 2: registrar médico
     private JPanel crearPanelMedicos() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -148,10 +144,7 @@ public class VentanaPaciente extends JFrame {
         return panel;
     }
 
-    // =========================================================
-    // PESTAÑA 3: REGISTRAR ATENCIÓN + GENERAR REPORTE
-    // (usa AtencionMedica + Reporte, con streams incluido)
-    // =========================================================
+    // Pestaña 3: registrar atención + recetar + generar reporte
     private JPanel crearPanelAtenciones() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -180,10 +173,10 @@ public class VentanaPaciente extends JFrame {
         panelBotones.add(btnRegistrar);
         panelBotones.add(btnReporte);
 
-        // --- Sección de receta: solo tiene sentido una vez que existe una atención ---
         JPanel panelReceta = new JPanel(new GridLayout(2, 1, 8, 8));
 
         JPanel filaMedicamento = new JPanel(new BorderLayout(8, 8));
+        // Combo lleno con getMedicamentos() (copia de la lista real)
         JComboBox<Medicamento> comboMedicamentos = new JComboBox<>();
         for (Medicamento m : centro.getMedicamentos()) {
             comboMedicamentos.addItem(m);
@@ -206,10 +199,7 @@ public class VentanaPaciente extends JFrame {
         JTextArea txtResultado = new JTextArea(10, 40);
         txtResultado.setEditable(false);
 
-        // Guarda la atención recién creada, para que el botón de recetar
-        // sepa a CUÁL atención agregarle medicamentos. Se usa un arreglo
-        // de tamaño 1 porque una lambda solo puede leer variables finales,
-        // pero SÍ puede modificar el contenido de un arreglo.
+        // Guarda la atención activa para el botón de recetar
         AtencionMedica[] atencionActual = new AtencionMedica[1];
 
         btnRegistrar.addActionListener(e -> {
@@ -230,10 +220,9 @@ public class VentanaPaciente extends JFrame {
                     txtTratamiento.getText().trim(),
                     txtObservaciones.getText().trim());
 
-            // Conexión real: queda dentro de la historia clínica de ESE paciente.
             paciente.agregarAtencion(atencion);
-            atenciones.add(atencion); // también se guarda aquí para el reporte global
-            atencionActual[0] = atencion; // esta es la atención "activa" para recetar
+            atenciones.add(atencion);
+            atencionActual[0] = atencion;
 
             txtResultado.setText("Atención registrada para " + paciente.getNombreCompleto()
                     + " (total en su historia: "
@@ -254,11 +243,9 @@ public class VentanaPaciente extends JFrame {
             }
 
             try {
-                // La atención delega en su propia receta, que descuenta el stock real
-                // y guarda la frecuencia escrita a mano.
                 atencionActual[0].agregarMedicamento(seleccionado, txtFrecuencia.getText());
-                comboMedicamentos.repaint(); // refleja el nuevo stock en el texto del combo
-                txtFrecuencia.setText(""); // listo para la siguiente indicación
+                comboMedicamentos.repaint();
+                txtFrecuencia.setText("");
 
                 String salida = capturarSalida(() -> atencionActual[0].mostrarAtencion());
                 txtResultado.setText(salida);
@@ -272,25 +259,24 @@ public class VentanaPaciente extends JFrame {
             String fechaHoy = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
             Reporte reporte = new Reporte("Reporte de atenciones", fechaHoy);
 
-            // generarReporte() usa stream().filter().map().forEach() por dentro,
-            // igual que en el proyecto original.
             String salida = capturarSalida(() -> reporte.generarReporte(atenciones));
             txtResultado.setText(salida);
         });
 
+        // En vez de depender de un lector de PDF instalado en el equipo (que puede
+        // no existir, como pasó), mostramos la receta en una ventana PROPIA de la
+        // aplicación (JDialog). Esa ventana siempre se abre, sin depender del
+        // sistema operativo. Desde ahí, opcionalmente, se puede guardar como PDF.
         btnImprimir.addActionListener(e -> {
             if (atencionActual[0] == null) {
                 txtResultado.setText("No hay ninguna atención activa para imprimir.");
                 return;
             }
-            try {
-                boolean listoParaImprimir = txtResultado.print();
-                if (!listoParaImprimir) {
-                    txtResultado.setText(txtResultado.getText() + "\n\n(Impresión cancelada por el usuario.)");
-                }
-            } catch (PrinterException ex) {
-                txtResultado.setText("Error al imprimir: " + ex.getMessage());
-            }
+
+            String contenidoReceta = "RECETA MEDICA\n\n"
+                    + capturarSalida(() -> atencionActual[0].mostrarAtencion());
+
+            mostrarVentanaReceta(contenidoReceta, atencionActual[0].getIdAtencion());
         });
 
         JPanel panelSuperior = new JPanel(new BorderLayout(10, 10));
@@ -303,9 +289,7 @@ public class VentanaPaciente extends JFrame {
         return panel;
     }
 
-    // =========================================================
-    // PESTAÑA 4: BUSCAR POR DNI + LISTAR TODOS (usa CentroSalud)
-    // =========================================================
+    // Pestaña 4: buscar por DNI + listar todos
     private JPanel crearPanelBuscarYListar() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -331,8 +315,6 @@ public class VentanaPaciente extends JFrame {
             if (encontrada == null) {
                 txtResultado.setText("No se encontró ninguna persona con ese DNI.");
             } else {
-                // Polimorfismo: mostrarDatos() ejecuta la versión de Medico o
-                // Paciente según el tipo REAL del objeto encontrado.
                 String salida = capturarSalida(() -> encontrada.mostrarDatos());
                 txtResultado.setText(salida);
             }
@@ -349,12 +331,55 @@ public class VentanaPaciente extends JFrame {
         return panel;
     }
 
-    // =========================================================
-    // Utilidad: captura lo que un método imprime con System.out.println
-    // y lo devuelve como texto, para poder mostrarlo en un JTextArea.
-    // Así reutilizamos mostrarDatos(), mostrarAtencion(), etc. sin
-    // tener que reescribirlos para que devuelvan String.
-    // =========================================================
+    // Ventana propia de la app para mostrar la receta: SIEMPRE se abre,
+    // porque la crea y la controla el propio programa (no depende de
+    // que el equipo tenga instalado un lector de PDF).
+    private void mostrarVentanaReceta(String contenido, String idAtencion) {
+        JDialog ventanaReceta = new JDialog(this, "Receta - Atención " + idAtencion, true);
+        ventanaReceta.setSize(450, 500);
+        ventanaReceta.setLocationRelativeTo(this);
+
+        JTextArea texto = new JTextArea(contenido);
+        texto.setEditable(false);
+        texto.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        texto.setMargin(new Insets(15, 15, 15, 15));
+
+        JButton btnGuardarPdf = new JButton("GUARDAR COMO PDF");
+        JButton btnCerrar = new JButton("CERRAR");
+
+        // Guardar en PDF queda como acción OPCIONAL, elegida por el usuario;
+        // ya no depende de que el sistema sepa abrir el archivo solo.
+        btnGuardarPdf.addActionListener(ev -> {
+            JFileChooser selector = new JFileChooser();
+            selector.setSelectedFile(new File("receta_" + idAtencion + ".pdf"));
+            if (selector.showSaveDialog(ventanaReceta) == JFileChooser.APPROVE_OPTION) {
+                try {
+                    generarPdfSimple(contenido, selector.getSelectedFile());
+                    JOptionPane.showMessageDialog(ventanaReceta,
+                            "Receta guardada en:\n" + selector.getSelectedFile().getAbsolutePath());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(ventanaReceta,
+                            "Error al guardar el PDF: " + ex.getMessage());
+                }
+            }
+        });
+
+        btnCerrar.addActionListener(ev -> ventanaReceta.dispose());
+
+        JPanel panelBotones = new JPanel(new GridLayout(1, 2, 10, 10));
+        panelBotones.add(btnGuardarPdf);
+        panelBotones.add(btnCerrar);
+
+        JPanel panelContenido = new JPanel(new BorderLayout(10, 10));
+        panelContenido.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panelContenido.add(new JScrollPane(texto), BorderLayout.CENTER);
+        panelContenido.add(panelBotones, BorderLayout.SOUTH);
+
+        ventanaReceta.setContentPane(panelContenido);
+        ventanaReceta.setVisible(true); // ventana modal propia: siempre se abre
+    }
+
+    // Captura lo que se imprime por consola y lo muestra en el JTextArea
     private String capturarSalida(Runnable accion) {
         PrintStream original = System.out;
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -365,6 +390,117 @@ public class VentanaPaciente extends JFrame {
             System.setOut(original);
         }
         return buffer.toString();
+    }
+
+    // =========================================================
+    // Generación de un PDF simple (solo texto, fuente Helvetica),
+    // sin librerías externas. Se usa en el botón "IMPRIMIR RECETA"
+    // para evitar el diálogo nativo de impresión de Java.
+    // =========================================================
+    private static final int PDF_ANCHO_PAGINA = 595;  // A4 en puntos
+    private static final int PDF_ALTO_PAGINA = 842;
+    private static final int PDF_MARGEN = 50;
+    private static final int PDF_TAMANO_FUENTE = 11;
+    private static final int PDF_INTERLINEA = 16;
+    private static final int PDF_LINEAS_POR_PAGINA =
+            (PDF_ALTO_PAGINA - PDF_MARGEN * 2) / PDF_INTERLINEA;
+
+    private void generarPdfSimple(String texto, File destino) throws java.io.IOException {
+        List<String> lineas = new ArrayList<>();
+        for (String linea : texto.split("\n", -1)) {
+            lineas.add(linea);
+        }
+
+        // Reparte las líneas en páginas si no entran en una sola
+        List<List<String>> paginas = new ArrayList<>();
+        for (int i = 0; i < lineas.size(); i += PDF_LINEAS_POR_PAGINA) {
+            paginas.add(lineas.subList(i, Math.min(i + PDF_LINEAS_POR_PAGINA, lineas.size())));
+        }
+        if (paginas.isEmpty()) {
+            paginas.add(new ArrayList<>());
+        }
+
+        ByteArrayOutputStream pdf = new ByteArrayOutputStream();
+        List<Integer> offsets = new ArrayList<>();
+
+        pdfEscribir(pdf, "%PDF-1.4\n");
+
+        // Objeto 1: catálogo
+        offsets.add(pdf.size());
+        pdfEscribir(pdf, "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+
+        // Objeto 2: árbol de páginas
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < paginas.size(); i++) {
+            kids.append(3 + i * 2).append(" 0 R ");
+        }
+        offsets.add(pdf.size());
+        pdfEscribir(pdf, "2 0 obj\n<< /Type /Pages /Kids [" + kids.toString().trim()
+                + "] /Count " + paginas.size() + " >>\nendobj\n");
+
+        int numeroFont = 3 + paginas.size() * 2; // la fuente va al final, después de las páginas
+
+        // Un objeto "página" + un objeto "contenido" por cada página
+        for (int i = 0; i < paginas.size(); i++) {
+            int numPagina = 3 + i * 2;
+            int numContenido = numPagina + 1;
+
+            offsets.add(pdf.size());
+            pdfEscribir(pdf, numPagina + " 0 obj\n<< /Type /Page /Parent 2 0 R "
+                    + "/MediaBox [0 0 " + PDF_ANCHO_PAGINA + " " + PDF_ALTO_PAGINA + "] "
+                    + "/Resources << /Font << /F1 " + numeroFont + " 0 R >> >> "
+                    + "/Contents " + numContenido + " 0 R >>\nendobj\n");
+
+            String contenido = pdfConstruirContenido(paginas.get(i));
+            byte[] contenidoBytes = contenido.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+
+            offsets.add(pdf.size());
+            pdfEscribir(pdf, numContenido + " 0 obj\n<< /Length " + contenidoBytes.length + " >>\nstream\n");
+            pdf.write(contenidoBytes);
+            pdfEscribir(pdf, "\nendstream\nendobj\n");
+        }
+
+        // Objeto de la fuente
+        offsets.add(pdf.size());
+        pdfEscribir(pdf, numeroFont + " 0 obj\n<< /Type /Font /Subtype /Type1 "
+                + "/BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n");
+
+        int xrefInicio = pdf.size();
+        int totalObjetos = offsets.size() + 1; // +1 por el objeto libre 0
+        pdfEscribir(pdf, "xref\n0 " + totalObjetos + "\n0000000000 65535 f \n");
+        for (int offset : offsets) {
+            pdfEscribir(pdf, String.format("%010d 00000 n \n", offset));
+        }
+        pdfEscribir(pdf, "trailer\n<< /Size " + totalObjetos + " /Root 1 0 R >>\nstartxref\n"
+                + xrefInicio + "\n%%EOF");
+
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(destino)) {
+            pdf.writeTo(fos);
+        }
+    }
+
+    // Arma el stream de contenido (BT...ET) con cada línea de texto.
+    private String pdfConstruirContenido(List<String> lineas) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("BT\n/F1 ").append(PDF_TAMANO_FUENTE).append(" Tf\n");
+        sb.append(PDF_MARGEN).append(" ").append(PDF_ALTO_PAGINA - PDF_MARGEN).append(" Td\n");
+        sb.append(PDF_INTERLINEA).append(" TL\n");
+        for (String linea : lineas) {
+            sb.append("(").append(pdfEscapar(linea)).append(") Tj\nT*\n");
+        }
+        sb.append("ET");
+        return sb.toString();
+    }
+
+    // Escapa paréntesis y backslashes: obligatorio dentro de un PDF.
+    private String pdfEscapar(String texto) {
+        return texto.replace("\\", "\\\\")
+                .replace("(", "\\(")
+                .replace(")", "\\)");
+    }
+
+    private void pdfEscribir(ByteArrayOutputStream out, String texto) throws java.io.IOException {
+        out.write(texto.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
     }
 
     public static void main(String[] args) {

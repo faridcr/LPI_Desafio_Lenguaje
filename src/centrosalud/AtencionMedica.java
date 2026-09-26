@@ -5,7 +5,7 @@ public class AtencionMedica {
     private String diagnostico;
     private String tratamiento;
     private String observaciones;
-    private Receta receta;
+    private Receta receta; // composición: nace junto con la atención
 
     public AtencionMedica(String idAtencion, String diagnostico,
                           String tratamiento, String observaciones) {
@@ -22,7 +22,7 @@ public class AtencionMedica {
     public String getObservaciones() { return observaciones; }
     public Receta getReceta() { return receta; }
 
-    // Delega en Receta, pasando también la frecuencia de toma escrita a mano.
+    // Delega en Receta
     public void agregarMedicamento(Medicamento medicamento, String frecuencia) {
         receta.agregarMedicamento(medicamento, frecuencia);
     }

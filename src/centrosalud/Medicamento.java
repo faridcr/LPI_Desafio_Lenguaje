@@ -18,8 +18,7 @@ public class Medicamento {
     public String getNombre() { return nombre; }
     public int getStock() { return stock; }
 
-    // Sin setStock(): la única forma de bajar el stock es esta acción,
-    // igual que programarCita()/cancelarCita() en CitaMedica.
+    // Sin setStock(): el stock solo baja con esta acción -> encapsulamiento
     public void descontarStock() {
         if (stock <= 0) {
             throw new IllegalArgumentException("No hay stock disponible de " + nombre + ".");
@@ -31,9 +30,7 @@ public class Medicamento {
         System.out.println(nombre + " (stock disponible: " + stock + ")");
     }
 
-    // Java llama a este método automáticamente cada vez que necesita
-    // "convertir" el objeto a texto — por ejemplo, un JComboBox lo usa
-    // para decidir qué mostrar por cada opción de la lista desplegable.
+    // Usado por el JComboBox de la GUI para mostrar cada opción
     @Override
     public String toString() {
         return nombre + " (stock: " + stock + ")";

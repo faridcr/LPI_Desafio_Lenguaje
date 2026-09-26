@@ -2,6 +2,7 @@ package centrosalud;
 
 import java.util.Scanner;
 
+// Punto de entrada - versión consola
 public class Principal {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
@@ -94,8 +95,7 @@ public class Principal {
         }
     }
 
-    // Ahora la atención SIEMPRE se registra sobre un paciente ya existente.
-    // Si el DNI no corresponde a ningún paciente registrado, no se crea.
+    // La atención siempre se registra sobre un paciente ya existente
     private static void registrarAtencion(Scanner sc, CentroSalud centro) {
         System.out.print("DNI del paciente: ");
         String dni = sc.nextLine().trim();
@@ -122,14 +122,13 @@ public class Principal {
         AtencionMedica atencion = new AtencionMedica(
                 idAtencion, diagnostico, tratamiento, observaciones);
 
-        // Conexión real: la atención queda dentro de la historia clínica
-        // de ESE paciente en particular, no suelta en ningún lado.
         paciente.agregarAtencion(atencion);
 
         System.out.println("Atención registrada en la historia clínica de "
                 + paciente.getNombreCompleto() + ".");
     }
 
+    // Polimorfismo: mostrarDatos() ejecuta la versión correcta sola
     private static void buscarPorDni(Scanner sc, CentroSalud centro) {
         System.out.print("Ingresa el DNI a buscar: ");
         String dni = sc.nextLine().trim();
