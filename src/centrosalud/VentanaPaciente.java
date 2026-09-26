@@ -2,6 +2,7 @@ package centrosalud;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.print.PrinterException;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.time.LocalDate;
@@ -180,15 +181,27 @@ public class VentanaPaciente extends JFrame {
         panelBotones.add(btnReporte);
 
         // --- Sección de receta: solo tiene sentido una vez que existe una atención ---
-        JPanel panelReceta = new JPanel(new BorderLayout(8, 8));
+        JPanel panelReceta = new JPanel(new GridLayout(2, 1, 8, 8));
+
+        JPanel filaMedicamento = new JPanel(new BorderLayout(8, 8));
         JComboBox<Medicamento> comboMedicamentos = new JComboBox<>();
         for (Medicamento m : centro.getMedicamentos()) {
             comboMedicamentos.addItem(m);
         }
         JButton btnAgregarMedicamento = new JButton("AGREGAR MEDICAMENTO A ESTA ATENCIÓN");
-        panelReceta.add(new JLabel("Medicamento:"), BorderLayout.WEST);
-        panelReceta.add(comboMedicamentos, BorderLayout.CENTER);
-        panelReceta.add(btnAgregarMedicamento, BorderLayout.EAST);
+        filaMedicamento.add(new JLabel("Medicamento:"), BorderLayout.WEST);
+        filaMedicamento.add(comboMedicamentos, BorderLayout.CENTER);
+        filaMedicamento.add(btnAgregarMedicamento, BorderLayout.EAST);
+
+        JPanel filaFrecuencia = new JPanel(new BorderLayout(8, 8));
+        JTextField txtFrecuencia = new JTextField();
+        JButton btnImprimir = new JButton("IMPRIMIR RECETA");
+        filaFrecuencia.add(new JLabel("Frecuencia (ej: cada 8 horas por 5 días):"), BorderLayout.WEST);
+        filaFrecuencia.add(txtFrecuencia, BorderLayout.CENTER);
+        filaFrecuencia.add(btnImprimir, BorderLayout.EAST);
+
+        panelReceta.add(filaMedicamento);
+        panelReceta.add(filaFrecuencia);
 
         JTextArea txtResultado = new JTextArea(10, 40);
         txtResultado.setEditable(false);
@@ -241,9 +254,11 @@ public class VentanaPaciente extends JFrame {
             }
 
             try {
-                // La atención delega en su propia receta, que descuenta el stock real.
-                atencionActual[0].agregarMedicamento(seleccionado);
+                // La atención delega en su propia receta, que descuenta el stock real
+                // y guarda la frecuencia escrita a mano.
+                atencionActual[0].agregarMedicamento(seleccionado, txtFrecuencia.getText());
                 comboMedicamentos.repaint(); // refleja el nuevo stock en el texto del combo
+                txtFrecuencia.setText(""); // listo para la siguiente indicación
 
                 String salida = capturarSalida(() -> atencionActual[0].mostrarAtencion());
                 txtResultado.setText(salida);
@@ -261,6 +276,21 @@ public class VentanaPaciente extends JFrame {
             // igual que en el proyecto original.
             String salida = capturarSalida(() -> reporte.generarReporte(atenciones));
             txtResultado.setText(salida);
+        });
+
+        btnImprimir.addActionListener(e -> {
+            if (atencionActual[0] == null) {
+                txtResultado.setText("No hay ninguna atención activa para imprimir.");
+                return;
+            }
+            try {
+                boolean listoParaImprimir = txtResultado.print();
+                if (!listoParaImprimir) {
+                    txtResultado.setText(txtResultado.getText() + "\n\n(Impresión cancelada por el usuario.)");
+                }
+            } catch (PrinterException ex) {
+                txtResultado.setText("Error al imprimir: " + ex.getMessage());
+            }
         });
 
         JPanel panelSuperior = new JPanel(new BorderLayout(10, 10));

@@ -22,10 +22,9 @@ public class AtencionMedica {
     public String getObservaciones() { return observaciones; }
     public Receta getReceta() { return receta; }
 
-    // Delega en Receta: la atención no maneja el stock ella misma,
-    // se lo pasa a SU receta, que es quien realmente controla eso.
-    public void agregarMedicamento(Medicamento medicamento) {
-        receta.agregarMedicamento(medicamento);
+    // Delega en Receta, pasando también la frecuencia de toma escrita a mano.
+    public void agregarMedicamento(Medicamento medicamento, String frecuencia) {
+        receta.agregarMedicamento(medicamento, frecuencia);
     }
 
     public void mostrarAtencion() {
