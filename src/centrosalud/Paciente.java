@@ -1,13 +1,11 @@
 package centrosalud;
 
 public class Paciente extends Persona {
-    private HistoriaClinica historiaClinica; // ya no es String: es un objeto real
+    private HistoriaClinica historiaClinica;
 
-    // Sigue recibiendo el número como texto (para no complicar el registro),
-    // pero internamente crea el objeto HistoriaClinica de verdad.
-    public Paciente(String dni, String nombre, String fechaNacimiento,
+    public Paciente(String dni, String nombres, String apellidos, String fechaNacimiento,
                      String numeroHistoria) {
-        super(dni, nombre, fechaNacimiento);
+        super(dni, nombres, apellidos, fechaNacimiento);
         this.historiaClinica = new HistoriaClinica(numeroHistoria);
     }
 
@@ -16,11 +14,9 @@ public class Paciente extends Persona {
     }
 
     public void solicitarCita() {
-        System.out.println(getNombre() + " solicita una cita médica.");
+        System.out.println(getNombreCompleto() + " solicita una cita médica.");
     }
 
-    // Delega en HistoriaClinica: el Paciente no guarda las atenciones él
-    // mismo, se las pasa a su historia clínica, que es la responsable.
     public void agregarAtencion(AtencionMedica atencion) {
         historiaClinica.agregarAtencion(atencion);
     }

@@ -7,20 +7,23 @@ import java.time.format.DateTimeParseException;
 
 public abstract class Persona {
     private String dni;
-    private String nombre;
+    private String nombres;
+    private String apellidos;
     private LocalDate fechaNacimiento;
 
     private static final DateTimeFormatter FORMATO_FECHA =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    // Ahora recibe la fecha de nacimiento como texto ("dd/MM/yyyy"),
-    // no la edad directamente.
-    public Persona(String dni, String nombre, String fechaNacimiento) {
+    // Ahora nombres y apellidos van separados, como en el DNI real.
+    public Persona(String dni, String nombres, String apellidos, String fechaNacimiento) {
         if (dni == null || !dni.matches("\\d{8}")) {
             throw new IllegalArgumentException("El DNI debe tener 8 dígitos.");
         }
-        if (nombre == null || nombre.isBlank()) {
-            throw new IllegalArgumentException("El nombre no puede estar vacío.");
+        if (nombres == null || nombres.isBlank()) {
+            throw new IllegalArgumentException("Los nombres no pueden estar vacíos.");
+        }
+        if (apellidos == null || apellidos.isBlank()) {
+            throw new IllegalArgumentException("Los apellidos no pueden estar vacíos.");
         }
 
         LocalDate fecha;
@@ -41,16 +44,22 @@ public abstract class Persona {
         }
 
         this.dni = dni;
-        this.nombre = nombre;
+        this.nombres = nombres;
+        this.apellidos = apellidos;
         this.fechaNacimiento = fecha;
     }
 
-    public String getNombre() { return nombre; }
+    public String getNombres() { return nombres; }
+    public String getApellidos() { return apellidos; }
+
+    // Método de conveniencia: junta ambos para mostrarlos en mensajes,
+    // sin obligar a todo el resto del código a concatenarlos cada vez.
+    public String getNombreCompleto() {
+        return apellidos + " " + nombres;
+    }
 
     public LocalDate getFechaNacimiento() { return fechaNacimiento; }
 
-    // La edad ya NO se guarda como atributo: se calcula cada vez que se pide,
-    // comparando la fecha de nacimiento con "hoy". Así nunca queda desactualizada.
     public int getEdad() {
         return Period.between(fechaNacimiento, LocalDate.now()).getYears();
     }
@@ -66,7 +75,8 @@ public abstract class Persona {
 
     public void mostrarDatos() {
         System.out.println("DNI: " + getDniEnmascarado());
-        System.out.println("Nombre: " + nombre);
+        System.out.println("Apellidos: " + apellidos);
+        System.out.println("Nombres: " + nombres);
         System.out.println("Fecha de nacimiento: " + fechaNacimiento.format(FORMATO_FECHA));
         System.out.println("Edad: " + getEdad() + " años");
     }

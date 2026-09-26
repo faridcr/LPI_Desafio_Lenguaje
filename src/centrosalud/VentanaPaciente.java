@@ -17,6 +17,8 @@ public class VentanaPaciente extends JFrame {
 
     public VentanaPaciente() {
 
+        BaseDatos.cargarDatosDePrueba(centro);
+
         setTitle("Centro de Salud 10 de Octubre");
         setSize(700, 550);
         setLocationRelativeTo(null);
@@ -38,16 +40,19 @@ public class VentanaPaciente extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        JPanel formulario = new JPanel(new GridLayout(4, 2, 8, 8));
+        JPanel formulario = new JPanel(new GridLayout(5, 2, 8, 8));
         JTextField txtDni = new JTextField();
-        JTextField txtNombre = new JTextField();
+        JTextField txtNombres = new JTextField();
+        JTextField txtApellidos = new JTextField();
         JTextField txtFecha = new JTextField();
         JTextField txtHistoria = new JTextField();
 
         formulario.add(new JLabel("DNI (8 dígitos):"));
         formulario.add(txtDni);
-        formulario.add(new JLabel("Nombre:"));
-        formulario.add(txtNombre);
+        formulario.add(new JLabel("Nombres:"));
+        formulario.add(txtNombres);
+        formulario.add(new JLabel("Apellidos:"));
+        formulario.add(txtApellidos);
         formulario.add(new JLabel("Fecha nacimiento (dd/MM/yyyy):"));
         formulario.add(txtFecha);
         formulario.add(new JLabel("Historia clínica:"));
@@ -61,7 +66,8 @@ public class VentanaPaciente extends JFrame {
             try {
                 Paciente paciente = new Paciente(
                         txtDni.getText().trim(),
-                        txtNombre.getText().trim(),
+                        txtNombres.getText().trim(),
+                        txtApellidos.getText().trim(),
                         txtFecha.getText().trim(),
                         txtHistoria.getText().trim());
 
@@ -90,17 +96,20 @@ public class VentanaPaciente extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        JPanel formulario = new JPanel(new GridLayout(5, 2, 8, 8));
+        JPanel formulario = new JPanel(new GridLayout(6, 2, 8, 8));
         JTextField txtDni = new JTextField();
-        JTextField txtNombre = new JTextField();
+        JTextField txtNombres = new JTextField();
+        JTextField txtApellidos = new JTextField();
         JTextField txtFecha = new JTextField();
         JTextField txtCmp = new JTextField();
         JTextField txtEspecialidad = new JTextField();
 
         formulario.add(new JLabel("DNI (8 dígitos):"));
         formulario.add(txtDni);
-        formulario.add(new JLabel("Nombre:"));
-        formulario.add(txtNombre);
+        formulario.add(new JLabel("Nombres:"));
+        formulario.add(txtNombres);
+        formulario.add(new JLabel("Apellidos:"));
+        formulario.add(txtApellidos);
         formulario.add(new JLabel("Fecha nacimiento (dd/MM/yyyy):"));
         formulario.add(txtFecha);
         formulario.add(new JLabel("CMP:"));
@@ -116,7 +125,8 @@ public class VentanaPaciente extends JFrame {
             try {
                 Medico medico = new Medico(
                         txtDni.getText().trim(),
-                        txtNombre.getText().trim(),
+                        txtNombres.getText().trim(),
+                        txtApellidos.getText().trim(),
                         txtFecha.getText().trim(),
                         txtCmp.getText().trim(),
                         txtEspecialidad.getText().trim());
@@ -163,14 +173,31 @@ public class VentanaPaciente extends JFrame {
         formulario.add(new JLabel("Observaciones:"));
         formulario.add(txtObservaciones);
 
-        JPanel panelBotones = new JPanel(new GridLayout(1, 2, 10, 10));
         JButton btnRegistrar = new JButton("REGISTRAR ATENCIÓN");
         JButton btnReporte = new JButton("GENERAR REPORTE");
+        JPanel panelBotones = new JPanel(new GridLayout(1, 2, 10, 10));
         panelBotones.add(btnRegistrar);
         panelBotones.add(btnReporte);
 
+        // --- Sección de receta: solo tiene sentido una vez que existe una atención ---
+        JPanel panelReceta = new JPanel(new BorderLayout(8, 8));
+        JComboBox<Medicamento> comboMedicamentos = new JComboBox<>();
+        for (Medicamento m : centro.getMedicamentos()) {
+            comboMedicamentos.addItem(m);
+        }
+        JButton btnAgregarMedicamento = new JButton("AGREGAR MEDICAMENTO A ESTA ATENCIÓN");
+        panelReceta.add(new JLabel("Medicamento:"), BorderLayout.WEST);
+        panelReceta.add(comboMedicamentos, BorderLayout.CENTER);
+        panelReceta.add(btnAgregarMedicamento, BorderLayout.EAST);
+
         JTextArea txtResultado = new JTextArea(10, 40);
         txtResultado.setEditable(false);
+
+        // Guarda la atención recién creada, para que el botón de recetar
+        // sepa a CUÁL atención agregarle medicamentos. Se usa un arreglo
+        // de tamaño 1 porque una lambda solo puede leer variables finales,
+        // pero SÍ puede modificar el contenido de un arreglo.
+        AtencionMedica[] atencionActual = new AtencionMedica[1];
 
         btnRegistrar.addActionListener(e -> {
             String dni = txtDniPaciente.getText().trim();
@@ -193,16 +220,37 @@ public class VentanaPaciente extends JFrame {
             // Conexión real: queda dentro de la historia clínica de ESE paciente.
             paciente.agregarAtencion(atencion);
             atenciones.add(atencion); // también se guarda aquí para el reporte global
+            atencionActual[0] = atencion; // esta es la atención "activa" para recetar
 
-            String salida = capturarSalida(() -> atencion.mostrarAtencion());
-            txtResultado.setText("ATENCIÓN REGISTRADA para " + paciente.getNombre()
+            txtResultado.setText("Atención registrada para " + paciente.getNombreCompleto()
                     + " (total en su historia: "
-                    + paciente.getHistoriaClinica().getAtenciones().size() + "):\n\n" + salida);
+                    + paciente.getHistoriaClinica().getAtenciones().size()
+                    + ").\nAhora puedes agregarle medicamentos abajo.");
+        });
 
-            txtId.setText("");
-            txtDiagnostico.setText("");
-            txtTratamiento.setText("");
-            txtObservaciones.setText("");
+        btnAgregarMedicamento.addActionListener(e -> {
+            if (atencionActual[0] == null) {
+                txtResultado.setText("Primero registra una atención antes de recetar.");
+                return;
+            }
+
+            Medicamento seleccionado = (Medicamento) comboMedicamentos.getSelectedItem();
+            if (seleccionado == null) {
+                txtResultado.setText("No hay medicamentos disponibles.");
+                return;
+            }
+
+            try {
+                // La atención delega en su propia receta, que descuenta el stock real.
+                atencionActual[0].agregarMedicamento(seleccionado);
+                comboMedicamentos.repaint(); // refleja el nuevo stock en el texto del combo
+
+                String salida = capturarSalida(() -> atencionActual[0].mostrarAtencion());
+                txtResultado.setText(salida);
+
+            } catch (IllegalArgumentException ex) {
+                txtResultado.setText("Error: " + ex.getMessage());
+            }
         });
 
         btnReporte.addActionListener(e -> {
@@ -215,9 +263,13 @@ public class VentanaPaciente extends JFrame {
             txtResultado.setText(salida);
         });
 
-        panel.add(formulario, BorderLayout.NORTH);
-        panel.add(panelBotones, BorderLayout.CENTER);
-        panel.add(new JScrollPane(txtResultado), BorderLayout.SOUTH);
+        JPanel panelSuperior = new JPanel(new BorderLayout(10, 10));
+        panelSuperior.add(formulario, BorderLayout.NORTH);
+        panelSuperior.add(panelBotones, BorderLayout.CENTER);
+        panelSuperior.add(panelReceta, BorderLayout.SOUTH);
+
+        panel.add(panelSuperior, BorderLayout.NORTH);
+        panel.add(new JScrollPane(txtResultado), BorderLayout.CENTER);
         return panel;
     }
 

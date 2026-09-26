@@ -9,11 +9,33 @@ public class CentroSalud {
     private List<Paciente> pacientes;
     private List<Medico> medicos;
     private List<CitaMedica> citas;
+    private List<Medicamento> medicamentos;
 
     public CentroSalud() {
         pacientes = new ArrayList<>();
         medicos = new ArrayList<>();
         citas = new ArrayList<>();
+        medicamentos = new ArrayList<>();
+    }
+
+    public void registrarMedicamento(Medicamento medicamento) {
+        medicamentos.add(medicamento);
+    }
+
+    public Medicamento buscarMedicamento(String nombre) {
+        for (Medicamento m : medicamentos) {
+            if (m.getNombre().equalsIgnoreCase(nombre)) {
+                return m;
+            }
+        }
+        return null; // no encontrado
+    }
+
+    // Devuelve una COPIA de la lista, no la lista real: así quien reciba
+    // esto puede leerla (para llenar un JComboBox, por ejemplo) pero no
+    // puede hacer .add() o .remove() sobre la lista interna de CentroSalud.
+    public List<Medicamento> getMedicamentos() {
+        return new ArrayList<>(medicamentos);
     }
 
     public void registrarPaciente(Paciente paciente) {
@@ -89,5 +111,10 @@ public class CentroSalud {
         }
 
         listarCitas();
+
+        System.out.println("--- MEDICAMENTOS EN STOCK (" + medicamentos.size() + ") ---");
+        for (Medicamento m : medicamentos) {
+            m.mostrarMedicamento();
+        }
     }
 }

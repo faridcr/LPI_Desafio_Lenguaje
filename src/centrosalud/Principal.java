@@ -9,6 +9,7 @@ public class Principal {
         int opcion;
 
         System.out.println("=== CENTRO DE SALUD 10 DE OCTUBRE ===");
+        BaseDatos.cargarDatosDePrueba(centro);
 
         do {
             System.out.println("\n--- MENÚ ---");
@@ -53,14 +54,16 @@ public class Principal {
         try {
             System.out.print("DNI (8 dígitos): ");
             String dni = sc.nextLine().trim();
-            System.out.print("Nombre: ");
-            String nombre = sc.nextLine().trim();
+            System.out.print("Nombres: ");
+            String nombres = sc.nextLine().trim();
+            System.out.print("Apellidos: ");
+            String apellidos = sc.nextLine().trim();
             System.out.print("Fecha de nacimiento (dd/MM/yyyy): ");
             String fechaNacimiento = sc.nextLine().trim();
             System.out.print("N° Historia clínica: ");
             String numeroHistoria = sc.nextLine().trim();
 
-            Paciente paciente = new Paciente(dni, nombre, fechaNacimiento, numeroHistoria);
+            Paciente paciente = new Paciente(dni, nombres, apellidos, fechaNacimiento, numeroHistoria);
             centro.registrarPaciente(paciente);
             System.out.println("Paciente registrado con éxito.");
         } catch (IllegalArgumentException e) {
@@ -72,8 +75,10 @@ public class Principal {
         try {
             System.out.print("DNI (8 dígitos): ");
             String dni = sc.nextLine().trim();
-            System.out.print("Nombre: ");
-            String nombre = sc.nextLine().trim();
+            System.out.print("Nombres: ");
+            String nombres = sc.nextLine().trim();
+            System.out.print("Apellidos: ");
+            String apellidos = sc.nextLine().trim();
             System.out.print("Fecha de nacimiento (dd/MM/yyyy): ");
             String fechaNacimiento = sc.nextLine().trim();
             System.out.print("CMP: ");
@@ -81,7 +86,7 @@ public class Principal {
             System.out.print("Especialidad: ");
             String especialidad = sc.nextLine().trim();
 
-            Medico medico = new Medico(dni, nombre, fechaNacimiento, cmp, especialidad);
+            Medico medico = new Medico(dni, nombres, apellidos, fechaNacimiento, cmp, especialidad);
             centro.registrarMedico(medico);
             System.out.println("Médico registrado con éxito.");
         } catch (IllegalArgumentException e) {
@@ -122,7 +127,7 @@ public class Principal {
         paciente.agregarAtencion(atencion);
 
         System.out.println("Atención registrada en la historia clínica de "
-                + paciente.getNombre() + ".");
+                + paciente.getNombreCompleto() + ".");
     }
 
     private static void buscarPorDni(Scanner sc, CentroSalud centro) {
