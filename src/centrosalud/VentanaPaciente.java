@@ -82,9 +82,14 @@ public class VentanaPaciente extends JFrame {
             }
         });
 
-        panel.add(formulario, BorderLayout.NORTH);
-        panel.add(btnRegistrar, BorderLayout.CENTER);
-        panel.add(new JScrollPane(txtResultado), BorderLayout.SOUTH);
+        // El formulario y el botón van juntos, tamaño fijo, arriba;
+        // el resultado se estira para llenar el resto de la ventana.
+        JPanel panelSuperior = new JPanel(new BorderLayout(10, 10));
+        panelSuperior.add(formulario, BorderLayout.NORTH);
+        panelSuperior.add(btnRegistrar, BorderLayout.SOUTH);
+
+        panel.add(panelSuperior, BorderLayout.NORTH);
+        panel.add(new JScrollPane(txtResultado), BorderLayout.CENTER);
         return panel;
     }
 
@@ -138,9 +143,12 @@ public class VentanaPaciente extends JFrame {
             }
         });
 
-        panel.add(formulario, BorderLayout.NORTH);
-        panel.add(btnRegistrar, BorderLayout.CENTER);
-        panel.add(new JScrollPane(txtResultado), BorderLayout.SOUTH);
+        JPanel panelSuperior = new JPanel(new BorderLayout(10, 10));
+        panelSuperior.add(formulario, BorderLayout.NORTH);
+        panelSuperior.add(btnRegistrar, BorderLayout.SOUTH);
+
+        panel.add(panelSuperior, BorderLayout.NORTH);
+        panel.add(new JScrollPane(txtResultado), BorderLayout.CENTER);
         return panel;
     }
 
@@ -325,9 +333,14 @@ public class VentanaPaciente extends JFrame {
             txtResultado.setText(salida);
         });
 
-        panel.add(panelBusqueda, BorderLayout.NORTH);
-        panel.add(panelBotones, BorderLayout.CENTER);
-        panel.add(new JScrollPane(txtResultado), BorderLayout.SOUTH);
+        // Búsqueda y botones van juntos en un solo bloque de tamaño FIJO arriba;
+        // el que debe estirarse para llenar el resto de la ventana es el resultado.
+        JPanel panelSuperior = new JPanel(new BorderLayout(10, 10));
+        panelSuperior.add(panelBusqueda, BorderLayout.NORTH);
+        panelSuperior.add(panelBotones, BorderLayout.SOUTH);
+
+        panel.add(panelSuperior, BorderLayout.NORTH);
+        panel.add(new JScrollPane(txtResultado), BorderLayout.CENTER);
         return panel;
     }
 
