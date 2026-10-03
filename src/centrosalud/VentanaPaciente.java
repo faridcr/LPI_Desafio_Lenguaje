@@ -17,17 +17,30 @@ public class VentanaPaciente extends JFrame {
 
     private CentroSalud centro = new CentroSalud();
     private List<AtencionMedica> atenciones = new ArrayList<>();
+    private JTabbedPane pestañas;
 
     public VentanaPaciente() {
 
         BaseDatos.cargarDatosDePrueba(centro);
 
         setTitle("Centro de Salud 10 de Octubre");
+        getContentPane().setBackground(new java.awt.Color(245, 248, 252));
         setSize(700, 550);
         setLocationRelativeTo(null);
+        aplicarEstiloTablero();
+        getContentPane().setBackground(
+        	    new java.awt.Color(245, 248, 252)
+        	);
+
+        	UIManager.put("TabbedPane.selected",
+        	    new java.awt.Color(22, 132, 216));
+        	UIManager.put("TabbedPane.background",
+        	    new java.awt.Color(230, 238, 248));
+        	UIManager.put("TabbedPane.foreground",
+        	    new java.awt.Color(11, 49, 91));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        JTabbedPane pestañas = new JTabbedPane();
+        pestañas = new JTabbedPane();
         pestañas.addTab("Pacientes", crearPanelPacientes());
         pestañas.addTab("Médicos", crearPanelMedicos());
         pestañas.addTab("Atenciones", crearPanelAtenciones());
@@ -36,10 +49,18 @@ public class VentanaPaciente extends JFrame {
         add(pestañas);
     }
 
+    public void mostrarPestana(int indice) {
+        if (indice >= 0 && indice < pestañas.getTabCount()) {
+            pestañas.setSelectedIndex(indice);
+        }
+      }
+  
+
     // Pestaña 1: registrar paciente
     private JPanel crearPanelPacientes() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        panel.setBackground(new Color(245, 248, 252));
 
         JPanel formulario = new JPanel(new GridLayout(5, 2, 8, 8));
         JTextField txtDni = new JTextField();
@@ -522,4 +543,21 @@ public class VentanaPaciente extends JFrame {
             ventana.setVisible(true);
         });
     }
+
+private void aplicarEstiloTablero() {
+    Color azulOscuro = new Color(11, 49, 91);
+    Color turquesa = new Color(22, 132, 216);
+    Color fondo = new Color(245, 248, 252);
+    Color blanco = Color.WHITE;
+
+    getContentPane().setBackground(fondo);
+
+    UIManager.put("TabbedPane.selected", turquesa);
+    UIManager.put("TabbedPane.background", azulOscuro);
+    UIManager.put("TabbedPane.foreground", blanco);
+    UIManager.put("TabbedPane.contentAreaColor", fondo);
+    UIManager.put("TabbedPane.focus", turquesa);
+
+    SwingUtilities.updateComponentTreeUI(this);
+}
 }
