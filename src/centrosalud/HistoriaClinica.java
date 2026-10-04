@@ -1,6 +1,7 @@
 package centrosalud;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 // Composición: guarda las atenciones médicas reales del paciente
@@ -13,7 +14,7 @@ public class HistoriaClinica {
             throw new IllegalArgumentException(
                     "El número de historia clínica no puede estar vacío.");
         }
-        this.numeroHistoria = numeroHistoria;
+        this.numeroHistoria = numeroHistoria.trim();
         this.atenciones = new ArrayList<>();
     }
 
@@ -29,8 +30,9 @@ public class HistoriaClinica {
         atenciones.add(atencion);
     }
 
+    // Lista de solo lectura: protege la lista real (encapsulamiento)
     public List<AtencionMedica> getAtenciones() {
-        return atenciones;
+        return Collections.unmodifiableList(atenciones);
     }
 
     public void mostrarHistoria() {

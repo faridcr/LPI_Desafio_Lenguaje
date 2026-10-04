@@ -1,66 +1,127 @@
 package centrosalud;
 
 import javax.swing.*;
-import java.awt.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.BorderLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.Insets;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
-// Punto de entrada - versión gráfica (Swing). Usa la misma lógica que Principal.
-// El botón "IMPRIMIR RECETA" genera un PDF simple con métodos propios
-// (sin librerías externas) y lo abre directo, en vez del diálogo nativo de impresión.
+// Versión gráfica (Swing). Recibe el CentroSalud ya creado, así todas las
+// ventanas comparten los mismos datos. Para recetas, el botón "IMPRIMIR RECETA"
+// abre una ventana propia de la aplicación y, opcionalmente, guarda un PDF
+// generado con métodos propios (sin librerías externas).
 public class VentanaPaciente extends JFrame {
 
-    private CentroSalud centro = new CentroSalud();
-    private List<AtencionMedica> atenciones = new ArrayList<>();
-    private JTabbedPane pestañas;
+    // Posición de cada pestaña (las usa TableroSalud para abrir la correcta)
+    public static final int TAB_PACIENTES = 0;
+    public static final int TAB_MEDICOS = 1;
+    public static final int TAB_ATENCIONES = 2;
+    public static final int TAB_CITAS = 3;
+    public static final int TAB_MEDICAMENTOS = 4;
+    public static final int TAB_BUSCAR = 5;
 
-    public VentanaPaciente() {
+    private final CentroSalud centro;
+    private JTabbedPane pestanas;
 
-        BaseDatos.cargarDatosDePrueba(centro);
+    // Componentes que se refrescan cuando cambian los datos
+    private JComboBox<Medicamento> comboMedicamentos;
+    private DefaultTableModel modeloMedicamentos;
+    private DefaultTableModel modeloCitas;
+
+    public VentanaPaciente(CentroSalud centro) {
+        if (centro == null) {
+            throw new IllegalArgumentException("El centro de salud no puede ser nulo.");
+        }
+        this.centro = centro;
 
         setTitle("Centro de Salud 10 de Octubre");
-        getContentPane().setBackground(new java.awt.Color(245, 248, 252));
-        setSize(700, 550);
+        setSize(800, 620);
         setLocationRelativeTo(null);
-        aplicarEstiloTablero();
-        getContentPane().setBackground(
-        	    new java.awt.Color(245, 248, 252)
-        	);
+        // DISPOSE: cerrar esta ventana no cierra todo el programa
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        	UIManager.put("TabbedPane.selected",
-        	    new java.awt.Color(22, 132, 216));
-        	UIManager.put("TabbedPane.background",
-        	    new java.awt.Color(230, 238, 248));
-        	UIManager.put("TabbedPane.foreground",
-        	    new java.awt.Color(11, 49, 91));
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        comboMedicamentos = new JComboBox<>();
 
-        pestañas = new JTabbedPane();
-        pestañas.addTab("Pacientes", crearPanelPacientes());
-        pestañas.addTab("Médicos", crearPanelMedicos());
-        pestañas.addTab("Atenciones", crearPanelAtenciones());
-        pestañas.addTab("Buscar / Listado", crearPanelBuscarYListar());
+        pestanas = new JTabbedPane();
+        pestanas.addTab("Pacientes", crearPanelPacientes());
+        pestanas.addTab("Médicos", crearPanelMedicos());
+        pestanas.addTab("Atenciones", crearPanelAtenciones());
+        pestanas.addTab("Citas", crearPanelCitas());
+        pestanas.addTab("Medicamentos", crearPanelMedicamentos());
+        pestanas.addTab("Buscar / Listado", crearPanelBuscarYListar());
 
-        add(pestañas);
+        // El listener va después de crear las pestañas para evitar que se dispare antes de tiempo
+        pestanas.addChangeListener(e -> actualizarDatos());
+
+        add(pestanas);
+        actualizarDatos();
+
+        // Se aplica al final, cuando ya existen todos los componentes
+        EstiloSalud.aplicar(this);
     }
 
     public void mostrarPestana(int indice) {
-        if (indice >= 0 && indice < pestañas.getTabCount()) {
-            pestañas.setSelectedIndex(indice);
+        if (indice >= 0 && indice < pestanas.getTabCount()) {
+            pestanas.setSelectedIndex(indice);
         }
-      }
-  
+    }
 
-    // Pestaña 1: registrar paciente
+    // Refresca combo de medicamentos, tabla de stock y tabla de citas
+    private void actualizarDatos() {
+        if (modeloMedicamentos == null || modeloCitas == null) {
+            return;
+        }
+
+        Medicamento seleccionado = (Medicamento) comboMedicamentos.getSelectedItem();
+        comboMedicamentos.removeAllItems();
+        for (Medicamento m : centro.getMedicamentos()) {
+            comboMedicamentos.addItem(m);
+        }
+        if (seleccionado != null) {
+            comboMedicamentos.setSelectedItem(seleccionado);
+        }
+
+        modeloMedicamentos.setRowCount(0);
+        for (Medicamento m : centro.getMedicamentos()) {
+            modeloMedicamentos.addRow(new Object[]{m.getNombre(), m.getStock()});
+        }
+
+        modeloCitas.setRowCount(0);
+        for (CitaMedica c : centro.getCitas()) {
+            modeloCitas.addRow(new Object[]{
+                    c.getIdCita(),
+                    c.getFecha(),
+                    c.getEstado(),
+                    c.getPaciente().getNombreCompleto(),
+                    c.getMedico().getNombreCompleto()});
+        }
+    }
+
+    // Modelo de tabla que no permite editar las celdas
+    private DefaultTableModel crearModeloTabla(String[] columnas) {
+        return new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int fila, int columna) {
+                return false;
+            }
+        };
+    }
+
+    // ======================= Pestaña 1: pacientes =======================
     private JPanel crearPanelPacientes() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        panel.setBackground(new Color(245, 248, 252));
 
         JPanel formulario = new JPanel(new GridLayout(5, 2, 8, 8));
         JTextField txtDni = new JTextField();
@@ -98,13 +159,17 @@ public class VentanaPaciente extends JFrame {
                 String salida = capturarSalida(() -> paciente.mostrarDatos());
                 txtResultado.setText("PACIENTE REGISTRADO:\n\n" + salida);
 
+                txtDni.setText("");
+                txtNombres.setText("");
+                txtApellidos.setText("");
+                txtFecha.setText("");
+                txtHistoria.setText("");
+
             } catch (IllegalArgumentException ex) {
                 txtResultado.setText("Error: " + ex.getMessage());
             }
         });
 
-        // El formulario y el botón van juntos, tamaño fijo, arriba;
-        // el resultado se estira para llenar el resto de la ventana.
         JPanel panelSuperior = new JPanel(new BorderLayout(10, 10));
         panelSuperior.add(formulario, BorderLayout.NORTH);
         panelSuperior.add(btnRegistrar, BorderLayout.SOUTH);
@@ -114,7 +179,7 @@ public class VentanaPaciente extends JFrame {
         return panel;
     }
 
-    // Pestaña 2: registrar médico
+    // ======================= Pestaña 2: médicos =======================
     private JPanel crearPanelMedicos() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -159,6 +224,13 @@ public class VentanaPaciente extends JFrame {
                 String salida = capturarSalida(() -> medico.mostrarDatos());
                 txtResultado.setText("MÉDICO REGISTRADO:\n\n" + salida);
 
+                txtDni.setText("");
+                txtNombres.setText("");
+                txtApellidos.setText("");
+                txtFecha.setText("");
+                txtCmp.setText("");
+                txtEspecialidad.setText("");
+
             } catch (IllegalArgumentException ex) {
                 txtResultado.setText("Error: " + ex.getMessage());
             }
@@ -173,7 +245,7 @@ public class VentanaPaciente extends JFrame {
         return panel;
     }
 
-    // Pestaña 3: registrar atención + recetar + generar reporte
+    // ============ Pestaña 3: atención + receta + reporte ============
     private JPanel crearPanelAtenciones() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -205,12 +277,7 @@ public class VentanaPaciente extends JFrame {
         JPanel panelReceta = new JPanel(new GridLayout(2, 1, 8, 8));
 
         JPanel filaMedicamento = new JPanel(new BorderLayout(8, 8));
-        // Combo lleno con getMedicamentos() (copia de la lista real)
-        JComboBox<Medicamento> comboMedicamentos = new JComboBox<>();
-        for (Medicamento m : centro.getMedicamentos()) {
-            comboMedicamentos.addItem(m);
-        }
-        JButton btnAgregarMedicamento = new JButton("AGREGAR MEDICAMENTO A ESTA ATENCIÓN");
+        JButton btnAgregarMedicamento = new JButton("AGREGAR A LA RECETA");
         filaMedicamento.add(new JLabel("Medicamento:"), BorderLayout.WEST);
         filaMedicamento.add(comboMedicamentos, BorderLayout.CENTER);
         filaMedicamento.add(btnAgregarMedicamento, BorderLayout.EAST);
@@ -218,7 +285,7 @@ public class VentanaPaciente extends JFrame {
         JPanel filaFrecuencia = new JPanel(new BorderLayout(8, 8));
         JTextField txtFrecuencia = new JTextField();
         JButton btnImprimir = new JButton("IMPRIMIR RECETA");
-        filaFrecuencia.add(new JLabel("Frecuencia (ej: cada 8 horas por 5 días):"), BorderLayout.WEST);
+        filaFrecuencia.add(new JLabel("Frecuencia (ej: cada 8 horas):"), BorderLayout.WEST);
         filaFrecuencia.add(txtFrecuencia, BorderLayout.CENTER);
         filaFrecuencia.add(btnImprimir, BorderLayout.EAST);
 
@@ -228,35 +295,46 @@ public class VentanaPaciente extends JFrame {
         JTextArea txtResultado = new JTextArea(10, 40);
         txtResultado.setEditable(false);
 
-        // Guarda la atención activa para el botón de recetar
+        // Atención y paciente activos (para recetar e imprimir)
         AtencionMedica[] atencionActual = new AtencionMedica[1];
+        Paciente[] pacienteActual = new Paciente[1];
 
         btnRegistrar.addActionListener(e -> {
-            String dni = txtDniPaciente.getText().trim();
-            Persona encontrada = centro.buscarPorDni(dni);
+            try {
+                String dni = txtDniPaciente.getText().trim();
+                Persona encontrada = centro.buscarPorDni(dni);
 
-            if (!(encontrada instanceof Paciente)) {
-                txtResultado.setText("No existe un paciente registrado con ese DNI.\n"
-                        + "Regístralo primero en la pestaña \"Pacientes\".");
-                return;
+                if (!(encontrada instanceof Paciente)) {
+                    txtResultado.setText("No existe un paciente registrado con ese DNI.\n"
+                            + "Regístralo primero en la pestaña \"Pacientes\".");
+                    return;
+                }
+
+                Paciente paciente = (Paciente) encontrada;
+                String id = txtId.getText().trim();
+
+                if (centro.existeAtencion(id)) {
+                    throw new IllegalArgumentException("Ya existe una atención con el ID " + id + ".");
+                }
+
+                AtencionMedica atencion = new AtencionMedica(
+                        id,
+                        txtDiagnostico.getText().trim(),
+                        txtTratamiento.getText().trim(),
+                        txtObservaciones.getText().trim());
+
+                paciente.agregarAtencion(atencion);
+                atencionActual[0] = atencion;
+                pacienteActual[0] = paciente;
+
+                txtResultado.setText("Atención registrada para " + paciente.getNombreCompleto()
+                        + " (total en su historia: "
+                        + paciente.getHistoriaClinica().getAtenciones().size()
+                        + ").\nAhora puedes agregarle medicamentos abajo.");
+
+            } catch (IllegalArgumentException ex) {
+                txtResultado.setText("Error: " + ex.getMessage());
             }
-
-            Paciente paciente = (Paciente) encontrada;
-
-            AtencionMedica atencion = new AtencionMedica(
-                    txtId.getText().trim(),
-                    txtDiagnostico.getText().trim(),
-                    txtTratamiento.getText().trim(),
-                    txtObservaciones.getText().trim());
-
-            paciente.agregarAtencion(atencion);
-            atenciones.add(atencion);
-            atencionActual[0] = atencion;
-
-            txtResultado.setText("Atención registrada para " + paciente.getNombreCompleto()
-                    + " (total en su historia: "
-                    + paciente.getHistoriaClinica().getAtenciones().size()
-                    + ").\nAhora puedes agregarle medicamentos abajo.");
         });
 
         btnAgregarMedicamento.addActionListener(e -> {
@@ -273,8 +351,8 @@ public class VentanaPaciente extends JFrame {
 
             try {
                 atencionActual[0].agregarMedicamento(seleccionado, txtFrecuencia.getText());
-                comboMedicamentos.repaint();
                 txtFrecuencia.setText("");
+                actualizarDatos(); // refresca el stock mostrado
 
                 String salida = capturarSalida(() -> atencionActual[0].mostrarAtencion());
                 txtResultado.setText(salida);
@@ -288,14 +366,12 @@ public class VentanaPaciente extends JFrame {
             String fechaHoy = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
             Reporte reporte = new Reporte("Reporte de atenciones", fechaHoy);
 
-            String salida = capturarSalida(() -> reporte.generarReporte(atenciones));
+            // Incluye las atenciones de TODOS los pacientes del centro
+            String salida = capturarSalida(
+                    () -> reporte.generarReporte(centro.getTodasLasAtenciones()));
             txtResultado.setText(salida);
         });
 
-        // En vez de depender de un lector de PDF instalado en el equipo (que puede
-        // no existir, como pasó), mostramos la receta en una ventana PROPIA de la
-        // aplicación (JDialog). Esa ventana siempre se abre, sin depender del
-        // sistema operativo. Desde ahí, opcionalmente, se puede guardar como PDF.
         btnImprimir.addActionListener(e -> {
             if (atencionActual[0] == null) {
                 txtResultado.setText("No hay ninguna atención activa para imprimir.");
@@ -303,6 +379,7 @@ public class VentanaPaciente extends JFrame {
             }
 
             String contenidoReceta = "RECETA MEDICA\n\n"
+                    + "Paciente: " + pacienteActual[0].getNombreCompleto() + "\n\n"
                     + capturarSalida(() -> atencionActual[0].mostrarAtencion());
 
             mostrarVentanaReceta(contenidoReceta, atencionActual[0].getIdAtencion());
@@ -318,7 +395,150 @@ public class VentanaPaciente extends JFrame {
         return panel;
     }
 
-    // Pestaña 4: buscar por DNI + listar todos
+    // ======================= Pestaña 4: citas =======================
+    private JPanel crearPanelCitas() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        JPanel formulario = new JPanel(new GridLayout(5, 2, 8, 8));
+        JTextField txtIdCita = new JTextField();
+        JTextField txtFecha = new JTextField();
+        JTextField txtMotivo = new JTextField();
+        JTextField txtDniPaciente = new JTextField();
+        JTextField txtDniMedico = new JTextField();
+
+        formulario.add(new JLabel("ID Cita:"));
+        formulario.add(txtIdCita);
+        formulario.add(new JLabel("Fecha (dd/MM/yyyy):"));
+        formulario.add(txtFecha);
+        formulario.add(new JLabel("Motivo:"));
+        formulario.add(txtMotivo);
+        formulario.add(new JLabel("DNI del paciente:"));
+        formulario.add(txtDniPaciente);
+        formulario.add(new JLabel("DNI del médico:"));
+        formulario.add(txtDniMedico);
+
+        JButton btnRegistrar = new JButton("REGISTRAR CITA");
+        JLabel lblMensaje = new JLabel(" ");
+
+        modeloCitas = crearModeloTabla(
+                new String[]{"ID", "Fecha", "Estado", "Paciente", "Médico"});
+        JTable tabla = new JTable(modeloCitas);
+        tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        JButton btnProgramar = new JButton("PROGRAMAR");
+        JButton btnAtendida = new JButton("MARCAR ATENDIDA");
+        JButton btnCancelar = new JButton("CANCELAR CITA");
+        JPanel panelEstados = new JPanel(new GridLayout(1, 3, 10, 10));
+        panelEstados.add(btnProgramar);
+        panelEstados.add(btnAtendida);
+        panelEstados.add(btnCancelar);
+
+        btnRegistrar.addActionListener(e -> {
+            try {
+                centro.registrarCita(
+                        txtIdCita.getText().trim(),
+                        txtFecha.getText().trim(),
+                        txtMotivo.getText().trim(),
+                        txtDniPaciente.getText().trim(),
+                        txtDniMedico.getText().trim());
+
+                lblMensaje.setText("Cita registrada con éxito (estado PENDIENTE).");
+                txtIdCita.setText("");
+                txtFecha.setText("");
+                txtMotivo.setText("");
+                txtDniPaciente.setText("");
+                txtDniMedico.setText("");
+                actualizarDatos();
+
+            } catch (IllegalArgumentException ex) {
+                lblMensaje.setText("Error: " + ex.getMessage());
+            }
+        });
+
+        btnProgramar.addActionListener(e ->
+                cambiarEstadoCita(tabla, lblMensaje, c -> c.programarCita()));
+        btnAtendida.addActionListener(e ->
+                cambiarEstadoCita(tabla, lblMensaje, c -> c.getMedico().atenderCita(c)));
+        btnCancelar.addActionListener(e ->
+                cambiarEstadoCita(tabla, lblMensaje, c -> c.cancelarCita()));
+
+        JPanel panelRegistro = new JPanel(new BorderLayout(8, 8));
+        panelRegistro.add(formulario, BorderLayout.NORTH);
+        panelRegistro.add(btnRegistrar, BorderLayout.CENTER);
+        panelRegistro.add(lblMensaje, BorderLayout.SOUTH);
+
+        panel.add(panelRegistro, BorderLayout.NORTH);
+        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
+        panel.add(panelEstados, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    // Aplica una acción (programar, atender, cancelar) a la cita seleccionada en la tabla
+    private void cambiarEstadoCita(JTable tabla, JLabel lblMensaje, Consumer<CitaMedica> accion) {
+        int fila = tabla.getSelectedRow();
+        if (fila < 0) {
+            lblMensaje.setText("Selecciona una cita de la tabla.");
+            return;
+        }
+
+        try {
+            CitaMedica cita = centro.getCitas().get(fila);
+            accion.accept(cita);
+            lblMensaje.setText("La cita " + cita.getIdCita() + " ahora está " + cita.getEstado() + ".");
+            actualizarDatos();
+        } catch (IllegalArgumentException ex) {
+            lblMensaje.setText("Error: " + ex.getMessage());
+        }
+    }
+
+    // ===================== Pestaña 5: medicamentos =====================
+    private JPanel crearPanelMedicamentos() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        JPanel formulario = new JPanel(new GridLayout(2, 2, 8, 8));
+        JTextField txtNombre = new JTextField();
+        JTextField txtStock = new JTextField();
+        formulario.add(new JLabel("Nombre del medicamento:"));
+        formulario.add(txtNombre);
+        formulario.add(new JLabel("Stock inicial:"));
+        formulario.add(txtStock);
+
+        JButton btnRegistrar = new JButton("REGISTRAR MEDICAMENTO");
+        JLabel lblMensaje = new JLabel(" ");
+
+        modeloMedicamentos = crearModeloTabla(new String[]{"Medicamento", "Stock disponible"});
+        JTable tabla = new JTable(modeloMedicamentos);
+
+        btnRegistrar.addActionListener(e -> {
+            try {
+                int stock = Integer.parseInt(txtStock.getText().trim());
+                centro.registrarMedicamento(new Medicamento(txtNombre.getText().trim(), stock));
+
+                lblMensaje.setText("Medicamento registrado con éxito.");
+                txtNombre.setText("");
+                txtStock.setText("");
+                actualizarDatos();
+
+            } catch (NumberFormatException ex) {
+                lblMensaje.setText("Error: el stock debe ser un número entero.");
+            } catch (IllegalArgumentException ex) {
+                lblMensaje.setText("Error: " + ex.getMessage());
+            }
+        });
+
+        JPanel panelSuperior = new JPanel(new BorderLayout(8, 8));
+        panelSuperior.add(formulario, BorderLayout.NORTH);
+        panelSuperior.add(btnRegistrar, BorderLayout.CENTER);
+        panelSuperior.add(lblMensaje, BorderLayout.SOUTH);
+
+        panel.add(panelSuperior, BorderLayout.NORTH);
+        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
+        return panel;
+    }
+
+    // ================= Pestaña 6: buscar por DNI + listar =================
     private JPanel crearPanelBuscarYListar() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -354,8 +574,6 @@ public class VentanaPaciente extends JFrame {
             txtResultado.setText(salida);
         });
 
-        // Búsqueda y botones van juntos en un solo bloque de tamaño FIJO arriba;
-        // el que debe estirarse para llenar el resto de la ventana es el resultado.
         JPanel panelSuperior = new JPanel(new BorderLayout(10, 10));
         panelSuperior.add(panelBusqueda, BorderLayout.NORTH);
         panelSuperior.add(panelBotones, BorderLayout.SOUTH);
@@ -365,9 +583,8 @@ public class VentanaPaciente extends JFrame {
         return panel;
     }
 
-    // Ventana propia de la app para mostrar la receta: SIEMPRE se abre,
-    // porque la crea y la controla el propio programa (no depende de
-    // que el equipo tenga instalado un lector de PDF).
+    // ======================== Ventana de la receta ========================
+    // Ventana propia de la app: siempre se abre, no depende de un lector de PDF instalado.
     private void mostrarVentanaReceta(String contenido, String idAtencion) {
         JDialog ventanaReceta = new JDialog(this, "Receta - Atención " + idAtencion, true);
         ventanaReceta.setSize(450, 500);
@@ -381,8 +598,6 @@ public class VentanaPaciente extends JFrame {
         JButton btnGuardarPdf = new JButton("GUARDAR COMO PDF");
         JButton btnCerrar = new JButton("CERRAR");
 
-        // Guardar en PDF queda como acción OPCIONAL, elegida por el usuario;
-        // ya no depende de que el sistema sepa abrir el archivo solo.
         btnGuardarPdf.addActionListener(ev -> {
             JFileChooser selector = new JFileChooser();
             selector.setSelectedFile(new File("receta_" + idAtencion + ".pdf"));
@@ -410,40 +625,54 @@ public class VentanaPaciente extends JFrame {
         panelContenido.add(panelBotones, BorderLayout.SOUTH);
 
         ventanaReceta.setContentPane(panelContenido);
-        ventanaReceta.setVisible(true); // ventana modal propia: siempre se abre
+        ventanaReceta.setVisible(true);
     }
 
-    // Captura lo que se imprime por consola y lo muestra en el JTextArea
+    // Captura lo que los métodos del modelo imprimen por consola para mostrarlo en la GUI
     private String capturarSalida(Runnable accion) {
         PrintStream original = System.out;
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(buffer));
+        System.setOut(new PrintStream(buffer, true, StandardCharsets.UTF_8));
         try {
             accion.run();
         } finally {
             System.setOut(original);
         }
-        return buffer.toString();
+        return buffer.toString(StandardCharsets.UTF_8);
     }
 
     // =========================================================
     // Generación de un PDF simple (solo texto, fuente Helvetica),
-    // sin librerías externas. Se usa en el botón "IMPRIMIR RECETA"
-    // para evitar el diálogo nativo de impresión de Java.
+    // sin librerías externas.
     // =========================================================
     private static final int PDF_ANCHO_PAGINA = 595;  // A4 en puntos
     private static final int PDF_ALTO_PAGINA = 842;
     private static final int PDF_MARGEN = 50;
     private static final int PDF_TAMANO_FUENTE = 11;
     private static final int PDF_INTERLINEA = 16;
+    private static final int PDF_MAX_CARACTERES = 85; // ancho máximo de línea
     private static final int PDF_LINEAS_POR_PAGINA =
             (PDF_ALTO_PAGINA - PDF_MARGEN * 2) / PDF_INTERLINEA;
 
-    private void generarPdfSimple(String texto, File destino) throws java.io.IOException {
-        List<String> lineas = new ArrayList<>();
-        for (String linea : texto.split("\n", -1)) {
-            lineas.add(linea);
+    // Corta las líneas largas para que no se salgan de la página
+    private List<String> envolverLineas(String texto) {
+        List<String> resultado = new ArrayList<>();
+        for (String linea : texto.replace("\r", "").split("\n", -1)) {
+            while (linea.length() > PDF_MAX_CARACTERES) {
+                int corte = linea.lastIndexOf(' ', PDF_MAX_CARACTERES);
+                if (corte <= 0) {
+                    corte = PDF_MAX_CARACTERES;
+                }
+                resultado.add(linea.substring(0, corte));
+                linea = linea.substring(corte).stripLeading();
+            }
+            resultado.add(linea);
         }
+        return resultado;
+    }
+
+    private void generarPdfSimple(String texto, File destino) throws IOException {
+        List<String> lineas = envolverLineas(texto);
 
         // Reparte las líneas en páginas si no entran en una sola
         List<List<String>> paginas = new ArrayList<>();
@@ -472,7 +701,7 @@ public class VentanaPaciente extends JFrame {
         pdfEscribir(pdf, "2 0 obj\n<< /Type /Pages /Kids [" + kids.toString().trim()
                 + "] /Count " + paginas.size() + " >>\nendobj\n");
 
-        int numeroFont = 3 + paginas.size() * 2; // la fuente va al final, después de las páginas
+        int numeroFont = 3 + paginas.size() * 2; // la fuente va al final
 
         // Un objeto "página" + un objeto "contenido" por cada página
         for (int i = 0; i < paginas.size(); i++) {
@@ -486,7 +715,7 @@ public class VentanaPaciente extends JFrame {
                     + "/Contents " + numContenido + " 0 R >>\nendobj\n");
 
             String contenido = pdfConstruirContenido(paginas.get(i));
-            byte[] contenidoBytes = contenido.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            byte[] contenidoBytes = contenido.getBytes(StandardCharsets.ISO_8859_1);
 
             offsets.add(pdf.size());
             pdfEscribir(pdf, numContenido + " 0 obj\n<< /Length " + contenidoBytes.length + " >>\nstream\n");
@@ -533,31 +762,15 @@ public class VentanaPaciente extends JFrame {
                 .replace(")", "\\)");
     }
 
-    private void pdfEscribir(ByteArrayOutputStream out, String texto) throws java.io.IOException {
-        out.write(texto.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
+    private void pdfEscribir(ByteArrayOutputStream out, String texto) throws IOException {
+        out.write(texto.getBytes(StandardCharsets.ISO_8859_1));
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            VentanaPaciente ventana = new VentanaPaciente();
-            ventana.setVisible(true);
+            CentroSalud centro = new CentroSalud();
+            BaseDatos.cargarDatosDePrueba(centro);
+            new VentanaPaciente(centro).setVisible(true);
         });
     }
-
-private void aplicarEstiloTablero() {
-    Color azulOscuro = new Color(11, 49, 91);
-    Color turquesa = new Color(22, 132, 216);
-    Color fondo = new Color(245, 248, 252);
-    Color blanco = Color.WHITE;
-
-    getContentPane().setBackground(fondo);
-
-    UIManager.put("TabbedPane.selected", turquesa);
-    UIManager.put("TabbedPane.background", azulOscuro);
-    UIManager.put("TabbedPane.foreground", blanco);
-    UIManager.put("TabbedPane.contentAreaColor", fondo);
-    UIManager.put("TabbedPane.focus", turquesa);
-
-    SwingUtilities.updateComponentTreeUI(this);
-}
 }

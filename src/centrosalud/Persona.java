@@ -27,6 +27,9 @@ public abstract class Persona {
         if (apellidos == null || apellidos.isBlank()) {
             throw new IllegalArgumentException("Los apellidos no pueden estar vacíos.");
         }
+        if (fechaNacimiento == null) {
+            throw new IllegalArgumentException("La fecha de nacimiento no puede estar vacía.");
+        }
 
         LocalDate fecha;
         try {
@@ -72,6 +75,11 @@ public abstract class Persona {
 
     public boolean coincideDni(String dniConsulta) {
         return dni.equals(dniConsulta);
+    }
+
+    // Permite detectar DNI repetidos sin exponer el DNI completo
+    public boolean tieneMismoDni(Persona otra) {
+        return otra != null && this.dni.equals(otra.dni);
     }
 
     // Sobrescrito en Medico y Paciente -> polimorfismo

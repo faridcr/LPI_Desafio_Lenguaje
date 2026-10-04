@@ -9,10 +9,17 @@ public class AtencionMedica {
 
     public AtencionMedica(String idAtencion, String diagnostico,
                           String tratamiento, String observaciones) {
-        this.idAtencion = idAtencion;
-        this.diagnostico = diagnostico;
-        this.tratamiento = tratamiento;
-        this.observaciones = observaciones;
+        if (idAtencion == null || idAtencion.isBlank()) {
+            throw new IllegalArgumentException("El ID de la atención no puede estar vacío.");
+        }
+        if (diagnostico == null || diagnostico.isBlank()) {
+            throw new IllegalArgumentException("El diagnóstico no puede estar vacío.");
+        }
+
+        this.idAtencion = idAtencion.trim();
+        this.diagnostico = diagnostico.trim();
+        this.tratamiento = tratamiento == null ? "" : tratamiento.trim();
+        this.observaciones = observaciones == null ? "" : observaciones.trim();
         this.receta = new Receta(); // toda atención nace con su propia receta, vacía
     }
 
