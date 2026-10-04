@@ -6,10 +6,18 @@ public class Medico extends Persona {
     private String especialidad;
 
     public Medico(String dni, String nombres, String apellidos, String fechaNacimiento,
-                   String cmp, String especialidad) {
+                  String cmp, String especialidad) {
         super(dni, nombres, apellidos, fechaNacimiento); // llama al constructor de Persona
-        this.cmp = cmp;
-        this.especialidad = especialidad;
+
+        if (cmp == null || cmp.isBlank()) {
+            throw new IllegalArgumentException("El CMP no puede estar vacío.");
+        }
+        if (especialidad == null || especialidad.isBlank()) {
+            throw new IllegalArgumentException("La especialidad no puede estar vacía.");
+        }
+
+        this.cmp = cmp.trim();
+        this.especialidad = especialidad.trim();
     }
 
     public String getCmp() {
@@ -20,9 +28,17 @@ public class Medico extends Persona {
         return especialidad;
     }
 
+    // Atiende una cita: solo el médico asignado puede hacerlo
     public void atenderCita(CitaMedica cita) {
+        if (cita == null) {
+            throw new IllegalArgumentException("La cita no puede ser nula.");
+        }
+        if (cita.getMedico() != this) {
+            throw new IllegalArgumentException("Esta cita pertenece a otro médico.");
+        }
+        cita.marcarAtendida();
         System.out.println("El médico " + getNombreCompleto()
-                + " está atendiendo la cita " + cita.getIdCita());
+                + " atendió la cita " + cita.getIdCita());
     }
 
     // Polimorfismo: sobrescribe mostrarDatos() de Persona

@@ -17,7 +17,16 @@ public class CentroSalud {
         medicamentos = new ArrayList<>();
     }
 
+    // ---------------- Medicamentos ----------------
+
     public void registrarMedicamento(Medicamento medicamento) {
+        if (medicamento == null) {
+            throw new IllegalArgumentException("El medicamento no puede ser nulo.");
+        }
+        if (buscarMedicamento(medicamento.getNombre()) != null) {
+            throw new IllegalArgumentException(
+                    "Ya existe un medicamento llamado " + medicamento.getNombre() + ".");
+        }
         medicamentos.add(medicamento);
     }
 
@@ -35,11 +44,40 @@ public class CentroSalud {
         return new ArrayList<>(medicamentos);
     }
 
+    // ---------------- Personas ----------------
+
+    // Un DNI no puede repetirse entre pacientes ni médicos
+    private boolean existeDni(Persona persona) {
+        for (Paciente p : pacientes) {
+            if (p.tieneMismoDni(persona)) {
+                return true;
+            }
+        }
+        for (Medico m : medicos) {
+            if (m.tieneMismoDni(persona)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void registrarPaciente(Paciente paciente) {
+        if (paciente == null) {
+            throw new IllegalArgumentException("El paciente no puede ser nulo.");
+        }
+        if (existeDni(paciente)) {
+            throw new IllegalArgumentException("Ya existe una persona registrada con ese DNI.");
+        }
         pacientes.add(paciente);
     }
 
     public void registrarMedico(Medico medico) {
+        if (medico == null) {
+            throw new IllegalArgumentException("El médico no puede ser nulo.");
+        }
+        if (existeDni(medico)) {
+            throw new IllegalArgumentException("Ya existe una persona registrada con ese DNI.");
+        }
         medicos.add(medico);
     }
 
@@ -58,9 +96,31 @@ public class CentroSalud {
         return null;
     }
 
+    // ---------------- Atenciones ----------------
+
+    // Reúne las atenciones de todos los pacientes (para los reportes)
+    public List<AtencionMedica> getTodasLasAtenciones() {
+        List<AtencionMedica> todas = new ArrayList<>();
+        for (Paciente p : pacientes) {
+            todas.addAll(p.getHistoriaClinica().getAtenciones());
+        }
+        return todas;
+    }
+
+    public boolean existeAtencion(String idAtencion) {
+        for (AtencionMedica a : getTodasLasAtenciones()) {
+            if (a.getIdAtencion().equalsIgnoreCase(idAtencion)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ---------------- Citas ----------------
+
     // Conexión real: valida que paciente y médico ya existan antes de crear la cita
     public CitaMedica registrarCita(String idCita, String fecha, String motivo,
-                                     String dniPaciente, String dniMedico) {
+                                    String dniPaciente, String dniMedico) {
 
         Persona posiblePaciente = buscarPorDni(dniPaciente);
         if (!(posiblePaciente instanceof Paciente)) {
@@ -74,12 +134,23 @@ public class CentroSalud {
                     "No existe un médico registrado con el DNI " + dniMedico + ".");
         }
 
+        for (CitaMedica c : citas) {
+            if (c.getIdCita().equalsIgnoreCase(idCita == null ? "" : idCita.trim())) {
+                throw new IllegalArgumentException("Ya existe una cita con el ID " + idCita + ".");
+            }
+        }
+
         Paciente paciente = (Paciente) posiblePaciente;
         Medico medico = (Medico) posibleMedico;
 
         CitaMedica cita = new CitaMedica(idCita, fecha, motivo, paciente, medico);
         citas.add(cita);
         return cita;
+    }
+
+    // Copia: protege la lista real de citas
+    public List<CitaMedica> getCitas() {
+        return new ArrayList<>(citas);
     }
 
     public void listarCitas() {

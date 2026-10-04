@@ -13,16 +13,21 @@ public class Reporte {
     }
 
     public void generarReporte(List<AtencionMedica> atenciones) {
-        System.out.println("\n==============================");
+        if (atenciones == null) {
+            throw new IllegalArgumentException("La lista de atenciones no puede ser nula.");
+        }
+
+        System.out.println("==============================");
         System.out.println("       REPORTE DE SALUD");
         System.out.println("==============================");
         System.out.println("Tipo: " + tipoReporte);
         System.out.println("Fecha: " + fecha);
         System.out.println("Cantidad de atenciones: " + atenciones.size());
+        System.out.println();
 
         // Streams: filter (descarta sin diagnóstico) + map (arma el texto) + forEach (imprime)
         atenciones.stream()
-                .filter(a -> !a.getDiagnostico().isBlank())
+                .filter(a -> a.getDiagnostico() != null && !a.getDiagnostico().isBlank())
                 .map(a -> "Atención " + a.getIdAtencion() + " - " + a.getDiagnostico())
                 .forEach(System.out::println);
     }
